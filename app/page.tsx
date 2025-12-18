@@ -1,19 +1,33 @@
 export default function Home() {
   return (
-    <main style={{ padding: 40, fontFamily: "Arial" }}>
-      <h1>🚀 DropSignal</h1>
-      <p>Your daily alpha drops on Farcaster.</p>
+    <main style={{
+      minHeight: "100vh",
+      background: "#0b0b0f",
+      color: "#fff",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
+      alignItems: "center",
+      fontFamily: "Inter, sans-serif"
+    }}>
+      <h1 style={{ fontSize: "3rem", marginBottom: "1rem" }}>
+        DropSignal 🚀
+      </h1>
 
-      <button
-        style={{
-          padding: "12px 20px",
-          fontSize: 16,
-          cursor: "pointer",
-          marginTop: 20,
-        }}
-        onClick={() => alert("Drop claimed!")}
-      >
-        Claim Today’s Drop
+      <p style={{ opacity: 0.7, marginBottom: "2rem" }}>
+        Signal-based mint drops for Farcaster
+      </p>
+
+      <button style={{
+        padding: "12px 24px",
+        borderRadius: "12px",
+        border: "none",
+        background: "#7c3aed",
+        color: "white",
+        fontSize: "1rem",
+        cursor: "pointer"
+      }}>
+        🔔 Enable Signal
       </button>
     </main>
   );
