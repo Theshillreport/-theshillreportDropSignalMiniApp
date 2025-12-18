@@ -1,18 +1,8 @@
-export const metadata = {
-  title: "DropSignal",
-  description: "Discover daily drops on Farcaster",
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function Home() {
   return (
-    <html lang="en">
-      <body style={{ margin: 0, fontFamily: "Inter, sans-serif" }}>
-        {children}
-      </body>
-    </html>
+    <main style={{ padding: 40 }}>
+      <h1>🚀 DropSignal</h1>
+      <p>The signal for onchain drops.</p>
+    </main>
   );
 }
