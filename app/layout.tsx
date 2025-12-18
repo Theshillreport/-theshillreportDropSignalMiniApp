@@ -1,6 +1,6 @@
 export const metadata = {
   title: "DropSignal",
-  description: "Daily onchain drops & signals",
+  description: "Discover daily drops on Farcaster",
 };
 
 export default function RootLayout({
@@ -10,13 +10,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body style={{
-        margin: 0,
-        padding: 0,
-        background: "#0b0b0f",
-        color: "#ffffff",
-        fontFamily: "system-ui, sans-serif"
-      }}>
+      <body style={{ margin: 0, fontFamily: "Inter, sans-serif" }}>
         {children}
       </body>
     </html>
