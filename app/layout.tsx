@@ -1,18 +1,15 @@
-import "./globals.css";
+"use client";
+import { WagmiProvider } from "wagmi";
+import { config } from "../lib/wagmi";
 
-export const metadata = {
-  title: "DropSignal",
-  description: "Daily onchain drops. Signal > Noise.",
-};
-
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html>
+      <body>
+        <WagmiProvider config={config}>
+          {children}
+        </WagmiProvider>
+      </body>
     </html>
   );
 }
