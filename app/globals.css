@@ -1,11 +1,31 @@
 html, body {
   margin: 0;
   padding: 0;
-  min-height: 100%;
-  background:
-    radial-gradient(1200px 600px at 10% 10%, rgba(255,138,0,0.12), transparent),
-    radial-gradient(1000px 600px at 90% 20%, rgba(79,209,255,0.15), transparent),
-    #0B0F1A;
-  color: white;
   font-family: system-ui, -apple-system, BlinkMacSystemFont;
+  background: linear-gradient(135deg, #ff8a00, #4facfe);
+  min-height: 100vh;
+  color: white;
+}
+
+button {
+  background: #111;
+  color: white;
+  border: none;
+  border-radius: 10px;
+  padding: 12px 18px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+button:hover {
+  opacity: 0.9;
+}
+
+.card {
+  background: rgba(0,0,0,0.35);
+  backdrop-filter: blur(10px);
+  border-radius: 20px;
+  padding: 24px;
+  max-width: 420px;
+  margin: 80px auto;
 }
