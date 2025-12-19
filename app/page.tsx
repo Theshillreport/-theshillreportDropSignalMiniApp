@@ -2,7 +2,15 @@ import { drops } from "./data/drops";
 
 export default function Home() {
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui" }}>
+    <main
+  style={{
+    minHeight: "100vh",
+    padding: 24,
+    fontFamily: "system-ui",
+    background: "linear-gradient(180deg, #0f0f14, #1a1a24)",
+    color: "white"
+  }}
+>
       <h1>🚀 DropSignal</h1>
       <p>Daily onchain drops. Signal &gt; Noise.</p>
 
