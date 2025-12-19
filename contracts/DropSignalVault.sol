@@ -9,11 +9,11 @@ interface IERC20 {
 contract DropSignalVault {
     IERC20 public usdc;
     address public feeReceiver;
-    uint256 public constant FEE_BPS = 5000; // 50%
 
+    uint256 public constant FEE_BPS = 5000; // 50%
     mapping(address => uint256) public balances;
 
-    constructor(0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69) {
+    constructor(address _usdc, address _feeReceiver) {
         usdc = IERC20(_usdc);
         feeReceiver = _feeReceiver;
     }
