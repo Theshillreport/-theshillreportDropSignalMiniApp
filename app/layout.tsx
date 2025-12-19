@@ -1,17 +1,9 @@
+import "./globals.css";
+
 export const metadata = {
   title: "DropSignal",
-  description: "Daily onchain drops",
-  other: {
-    "fc:frame": "vNext",
-    "fc:frame:image": "https://drop-signal.vercel.app/og.png",
-    "fc:frame:button:1": "Open Drops",
-    "fc:frame:post_url": "https://drop-signal.vercel.app"
-  }
+  description: "Daily onchain drops. Signal > Noise.",
 };
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    import "./globals.css";
 
 export default function RootLayout({
   children,
