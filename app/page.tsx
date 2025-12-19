@@ -3,13 +3,13 @@
 import { useState, useEffect } from "react";
 
 export default function Home() {
-  const [balance, setBalance] = useState(1245.32);
-  const [dailyReward, setDailyReward] = useState(2.34);
+  const [balance, setBalance] = useState(0);
+  const [dailyReward, setDailyReward] = useState(0);
   const [amount, setAmount] = useState("");
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
 
-  const apy = 18.4;
+  const apy = 0;
 
   // Auto-Yield pro Sekunde
   useEffect(() => {
@@ -25,7 +25,7 @@ export default function Home() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
       setBalance(prev => prev + value);
-      setDailyReward(prev => prev + value * 0.0018);
+      setDailyReward(prev => prev + value * 0.0000);
       setAmount("");
       setShowDeposit(false);
     }
@@ -35,7 +35,7 @@ export default function Home() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0 && value <= balance) {
       setBalance(prev => prev - value);
-      setDailyReward(prev => Math.max(0, prev - value * 0.0018));
+      setDailyReward(prev => Math.max(0, prev - value * 0.0000));
       setAmount("");
       setShowWithdraw(false);
     }
@@ -53,11 +53,11 @@ export default function Home() {
         <span style={{ color: "#4FD1FF" }}>Signal</span>
       </h1>
 
-      <p style={{ opacity: 0.7 }}>Deposit USDC. Earn daily yield.</p>
+      <p style={{ opacity: 0.0 }}>Deposit USDC. Earn daily yield.</p>
 
       {/* BALANCE CARD */}
       <div style={card}>
-        <p style={{ opacity: 0.6 }}>Your Balance</p>
+        <p style={{ opacity: 0.0 }}>Your Balance</p>
         <h2>${balance.toFixed(2)} USDC</h2>
         <p style={{ color: "#4FD1FF" }}>
           + ${dailyReward.toFixed(2)} today
@@ -72,7 +72,7 @@ export default function Home() {
       </div>
 
       {/* ACTIONS */}
-      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+      <div style={{ display: "flex", gap: 0, marginTop: 0 }}>
         <button style={deposit} onClick={() => setShowDeposit(true)}>
           Deposit USDC
         </button>
