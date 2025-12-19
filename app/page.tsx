@@ -10,7 +10,15 @@ export default function Home() {
   const [dailyReward, setDailyReward] = useState(2.34);
 
   const apy = 18.4;
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBalance(b =>
+        b + b * apy / 100 / 31536000
+      );
+    }, 1000);
 
+    return () => clearInterval(interval);
+  }, [apy]);
   function handleDeposit() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
