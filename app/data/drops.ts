@@ -2,17 +2,19 @@ export const drops = [
   {
     id: 1,
     title: "BASE Meme Coin",
-    description: "New Base chain meme coin with fair launch",
+    description: "New Base chain meme coin. Fair launch, no presale.",
     chain: "Base",
     date: "Today",
-    mintUrl: "https://example.com"
+    actionUrl: "https://dexscreener.com/base",
+    actionLabel: "Trade"
   },
   {
     id: 2,
     title: "Solana Utility Token",
-    description: "Early utility token, no presale",
+    description: "Early utility token. Community-driven.",
     chain: "Solana",
     date: "Today",
-    mintUrl: "https://example.com"
+    actionUrl: "https://dexscreener.com/solana",
+    actionLabel: "Trade"
   }
 ];
