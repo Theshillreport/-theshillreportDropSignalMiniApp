@@ -1,53 +1,97 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import {
+  useAccount,
+  useConnect,
+  useDisconnect,
+  useWriteContract,
+} from "wagmi";
+import { injected } from "wagmi/connectors";
+import { parseUnits } from "viem";
+
+import {
+  USDC_ADDRESS,
+  VAULT_ADDRESS,
+  usdcAbi,
+  vaultAbi,
+} from "../lib/contracts";
 
 export default function Home() {
-  const [balance, setBalance] = useState(1245.32);
-  const [dailyReward, setDailyReward] = useState(2.34);
+  /* -------------------- WALLET -------------------- */
+  const { address, isConnected } = useAccount();
+  const { connect } = useConnect();
+  const { disconnect } = useDisconnect();
+  const { writeContract } = useWriteContract();
+
+  /* -------------------- STATE -------------------- */
+  const [balance, setBalance] = useState(1245.32); // UI only
+  const [dailyReward, setDailyReward] = useState(2.34); // UI only
   const [amount, setAmount] = useState("");
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
 
   const apy = 18.4;
 
-  // AUTO YIELD PRO SEKUNDE (UI)
+  /* -------------------- AUTO YIELD (UI) -------------------- */
   useEffect(() => {
     const interval = setInterval(() => {
-      setBalance(prev =>
-        prev + (prev * apy) / 100 / 31536000
-      );
-
-      setDailyReward(prev =>
-        prev + (balance * apy) / 100 / 31536000
-      );
+      setBalance(prev => prev + (prev * apy) / 100 / 31536000);
+      setDailyReward(prev => prev + (balance * apy) / 100 / 31536000);
     }, 1000);
 
     return () => clearInterval(interval);
   }, [apy, balance]);
 
-  function handleDeposit() {
-    const value = parseFloat(amount);
-    if (!isNaN(value) && value > 0) {
-      setBalance(prev => prev + value);
-      setAmount("");
-      setShowDeposit(false);
-    }
+  /* -------------------- CONTRACT ACTIONS -------------------- */
+
+  async function approveAndDeposit() {
+    if (!amount) return;
+
+    const value = parseUnits(amount, 6); // USDC = 6 decimals
+
+    // 1️⃣ APPROVE USDC
+    writeContract({
+      address: USDC_ADDRESS,
+      abi: usdcAbi,
+      functionName: "approve",
+      args: [VAULT_ADDRESS, value],
+    });
+
+    // 2️⃣ DEPOSIT
+    writeContract({
+      address: VAULT_ADDRESS,
+      abi: vaultAbi,
+      functionName: "deposit",
+      args: [value],
+    });
+
+    setShowDeposit(false);
+    setAmount("");
   }
 
-  function handleWithdraw() {
-    const value = parseFloat(amount);
-    if (!isNaN(value) && value > 0 && value <= balance) {
-      setBalance(prev => prev - value);
-      setAmount("");
-      setShowWithdraw(false);
-    }
+  async function withdraw() {
+    if (!amount) return;
+
+    const value = parseUnits(amount, 6);
+
+    writeContract({
+      address: VAULT_ADDRESS,
+      abi: vaultAbi,
+      functionName: "withdraw",
+      args: [value],
+    });
+
+    setShowWithdraw(false);
+    setAmount("");
   }
 
   function claimReward() {
     setBalance(prev => prev + dailyReward);
     setDailyReward(0);
   }
+
+  /* -------------------- UI -------------------- */
 
   return (
     <main style={{ padding: 24, maxWidth: 420, margin: "0 auto" }}>
@@ -56,44 +100,62 @@ export default function Home() {
         <span style={{ color: "#4FD1FF" }}>Signal</span>
       </h1>
 
-      <p style={{ opacity: 0.7 }}>
-        Deposit USDC. Earn daily yield.
-      </p>
-
-      {/* BALANCE */}
-      <div style={card}>
-        <p style={{ opacity: 0.6 }}>Your Balance</p>
-        <h2>${balance.toFixed(2)} USDC</h2>
-        <p style={{ color: "#4FD1FF" }}>
-          + ${dailyReward.toFixed(4)} today
-        </p>
-      </div>
-
-      {/* APY */}
-      <div style={card}>
-        <p style={{ opacity: 0.6 }}>Current APY</p>
-        <h2 style={{ color: "#FF8A00" }}>{apy}%</h2>
-        <p style={{ opacity: 0.6 }}>Compounded live</p>
-      </div>
-
-      {/* ACTIONS */}
-      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-        <button style={deposit} onClick={() => setShowDeposit(true)}>
-          Deposit USDC
+      {!isConnected ? (
+        <button
+          style={deposit}
+          onClick={() => connect({ connector: injected() })}
+        >
+          Connect Wallet
         </button>
-        <button style={withdraw} onClick={() => setShowWithdraw(true)}>
-          Withdraw
-        </button>
-      </div>
+      ) : (
+        <>
+          <p style={{ opacity: 0.7 }}>
+            Connected: {address?.slice(0, 6)}…{address?.slice(-4)}
+          </p>
 
-      {/* REWARD */}
-      <div style={{ ...card, marginTop: 24 }}>
-        <p style={{ opacity: 0.6 }}>Accrued Reward</p>
-        <h3>+ ${dailyReward.toFixed(4)}</h3>
-        <button style={claim} onClick={claimReward}>
-          Claim
-        </button>
-      </div>
+          {/* BALANCE */}
+          <div style={card}>
+            <p style={{ opacity: 0.6 }}>Your Balance</p>
+            <h2>${balance.toFixed(2)} USDC</h2>
+            <p style={{ color: "#4FD1FF" }}>
+              + ${dailyReward.toFixed(4)} today
+            </p>
+          </div>
+
+          {/* APY */}
+          <div style={card}>
+            <p style={{ opacity: 0.6 }}>Current APY</p>
+            <h2 style={{ color: "#FF8A00" }}>{apy}%</h2>
+            <p style={{ opacity: 0.6 }}>Compounded live</p>
+          </div>
+
+          {/* ACTIONS */}
+          <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+            <button style={deposit} onClick={() => setShowDeposit(true)}>
+              Deposit USDC
+            </button>
+            <button style={withdrawBtn} onClick={() => setShowWithdraw(true)}>
+              Withdraw
+            </button>
+          </div>
+
+          {/* REWARD */}
+          <div style={{ ...card, marginTop: 24 }}>
+            <p style={{ opacity: 0.6 }}>Accrued Reward</p>
+            <h3>+ ${dailyReward.toFixed(4)}</h3>
+            <button style={claim} onClick={claimReward}>
+              Claim
+            </button>
+          </div>
+
+          <button
+            style={{ ...withdrawBtn, marginTop: 20 }}
+            onClick={() => disconnect()}
+          >
+            Disconnect
+          </button>
+        </>
+      )}
 
       {/* MODAL */}
       {(showDeposit || showWithdraw) && (
@@ -111,13 +173,13 @@ export default function Home() {
 
             <button
               style={deposit}
-              onClick={showDeposit ? handleDeposit : handleWithdraw}
+              onClick={showDeposit ? approveAndDeposit : withdraw}
             >
               Confirm
             </button>
 
             <button
-              style={{ ...withdraw, marginTop: 10 }}
+              style={{ ...withdrawBtn, marginTop: 10 }}
               onClick={() => {
                 setShowDeposit(false);
                 setShowWithdraw(false);
@@ -132,7 +194,7 @@ export default function Home() {
   );
 }
 
-/* STYLES */
+/* -------------------- STYLES -------------------- */
 
 const card = {
   background: "rgba(255,255,255,0.04)",
@@ -140,28 +202,26 @@ const card = {
   borderRadius: 16,
   padding: 16,
   marginTop: 16,
-  boxShadow: "0 0 40px rgba(79,209,255,0.08)"
+  boxShadow: "0 0 40px rgba(79,209,255,0.08)",
 };
 
 const deposit = {
-  flex: 1,
   padding: 14,
   borderRadius: 12,
   background: "linear-gradient(135deg,#FF8A00,#FFB347)",
   color: "#000",
   fontWeight: 700,
   border: "none",
-  width: "100%"
+  width: "100%",
 };
 
-const withdraw = {
-  flex: 1,
+const withdrawBtn = {
   padding: 14,
   borderRadius: 12,
   background: "transparent",
   color: "#4FD1FF",
   border: "1px solid #4FD1FF",
-  width: "100%"
+  width: "100%",
 };
 
 const claim = {
@@ -172,7 +232,7 @@ const claim = {
   background: "#4FD1FF",
   color: "#000",
   border: "none",
-  fontWeight: 600
+  fontWeight: 600,
 };
 
 const overlay = {
@@ -182,7 +242,7 @@ const overlay = {
   display: "flex",
   alignItems: "center",
   justifyContent: "center",
-  zIndex: 10
+  zIndex: 10,
 };
 
 const input = {
@@ -190,5 +250,5 @@ const input = {
   padding: 12,
   borderRadius: 8,
   border: "none",
-  marginBottom: 16
+  marginBottom: 16,
 };
