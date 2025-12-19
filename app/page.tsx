@@ -3,14 +3,12 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [balance, setBalance] = useState(1245.32);
-  const [amount, setAmount] = useState("");
-  const [showDeposit, setShowDeposit] = useState(false);
-  const [showWithdraw, setShowWithdraw] = useState(false);
-  const [dailyReward, setDailyReward] = useState(2.34);
+  const { address, isConnected } = useAccount(); // ✅ hier
+  const { connect } = useConnect();
+  const { disconnect } = useDisconnect();
 
-  const apy = 18.4;
-
+  // Rest deines Codes...
+}
   function handleDeposit() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
