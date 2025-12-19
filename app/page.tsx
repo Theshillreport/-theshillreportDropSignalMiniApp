@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 import USDCAbi from "../lib/usdcAbi.json"; // ERC20 ABI
 import VaultAbi from "../lib/vaultAbi.json"; // Dein Vault Contract ABI
 
-const USDC_ADDRESS = "0x..."; // USDC Testnet Address
+const USDC_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69"; // USDC Testnet Address
 const VAULT_ADDRESS = "0x..."; // Dein Vault Contract Address
 
 export default function Home() {
