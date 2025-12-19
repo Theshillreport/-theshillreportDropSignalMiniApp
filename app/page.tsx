@@ -1,4 +1,5 @@
 "use client";
+
 import { useState, useEffect } from "react";
 
 export default function Home() {
@@ -8,7 +9,7 @@ export default function Home() {
   const [showDeposit, setShowDeposit] = useState(false);
   const apy = 18.4;
 
-  // Auto Yield pro Sekunde
+  // Auto-Yield pro Sekunde
   useEffect(() => {
     const interval = setInterval(() => {
       setBalance(prev => prev + (prev * apy) / 100 / 31536000);
@@ -39,7 +40,7 @@ export default function Home() {
       id: Math.random(),
       left: Math.random() * 100,
       size: 16 + Math.random() * 24,
-      speed: 2 + Math.random() * 3,
+      speed: 1 + Math.random() * 2,
       hue: Math.random() * 360,
       offset: Math.random() * 100
     }));
@@ -47,7 +48,9 @@ export default function Home() {
   }, []);
 
   return (
-    <main style={{ padding: 24, maxWidth: 420, margin: "0 auto", position: "relative", overflow: "hidden" }}>
+    <main style={{ padding: 24, maxWidth: 420, margin: "0 auto", position: "relative", overflow: "hidden", minHeight: "100vh", background: "linear-gradient(135deg, #FF8A00 70%, #4FD1FF 30%)" }}>
+      
+      {/* Coins Hintergrund */}
       {coins.map(coin => (
         <span
           key={coin.id}
@@ -60,39 +63,46 @@ export default function Home() {
             transform: "translateY(-50%)",
             pointerEvents: "none",
             userSelect: "none",
-            zIndex: 0
+            zIndex: 0,
+            opacity: 0.3
           }}
         >💰</span>
       ))}
 
-      <h1 style={{ fontSize: 32, position: "relative", zIndex: 1 }}>
-        🚀 <span style={{ color: "#FF8A00" }}>Drop</span><span style={{ color: "#4FD1FF" }}>Signal</span>
-      </h1>
+      {/* Alle Inhalte im Vordergrund */}
+      <div style={{ position: "relative", zIndex: 1 }}>
+        <h1 style={{ fontSize: 32 }}>
+          🚀 <span style={{ color: "#FF8A00" }}>Drop</span>
+          <span style={{ color: "#4FD1FF" }}>Signal</span>
+        </h1>
 
-      <div style={card}>
-        <p style={{ opacity: 0.6 }}>Your Balance</p>
-        <h2>${balance.toFixed(2)} USDC</h2>
-        <p style={{ color: "#4FD1FF" }}>+ ${dailyReward.toFixed(2)} today</p>
-      </div>
-
-      <button style={deposit} onClick={() => setShowDeposit(true)}>Deposit USDC</button>
-      {showDeposit && (
-        <div style={overlay}>
-          <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} style={input}/>
-          <button style={deposit} onClick={handleDeposit}>Confirm</button>
-          <button style={withdrawBtn} onClick={()=>setShowDeposit(false)}>Cancel</button>
+        <div style={card}>
+          <p style={{ opacity: 0.6 }}>Your Balance</p>
+          <h2>${balance.toFixed(2)} USDC</h2>
+          <p style={{ color: "#4FD1FF" }}>+ ${dailyReward.toFixed(2)} today</p>
         </div>
-      )}
 
-      <div style={{ ...card, marginTop: 24, position: "relative", zIndex: 1 }}>
-        <p style={{ opacity: 0.6 }}>Daily Reward</p>
-        <h3>+ ${dailyReward.toFixed(2)}</h3>
-        <button style={claim} onClick={claimReward}>Claim</button>
+        <button style={deposit} onClick={() => setShowDeposit(true)}>Deposit USDC</button>
+
+        {showDeposit && (
+          <div style={overlay}>
+            <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} style={input}/>
+            <button style={deposit} onClick={handleDeposit}>Confirm</button>
+            <button style={withdrawBtn} onClick={()=>setShowDeposit(false)}>Cancel</button>
+          </div>
+        )}
+
+        <div style={{ ...card, marginTop: 24 }}>
+          <p style={{ opacity: 0.6 }}>Daily Reward</p>
+          <h3>+ ${dailyReward.toFixed(2)}</h3>
+          <button style={claim} onClick={claimReward}>Claim</button>
+        </div>
       </div>
     </main>
   );
 }
 
+/* ------------------- Styles ------------------- */
 const card = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(79,209,255,0.35)",
