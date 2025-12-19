@@ -21,7 +21,7 @@ export default function Home() {
       {/* YIELD CARD */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Current APY</p>
-        <h2 style={{ color: "#FF8A00" }}>18.4%</h2>
+        <h2 style={{ color: "#FF8A00" }}>0%</h2>
         <p style={{ opacity: 0.6 }}>Compounded daily</p>
       </div>
 
