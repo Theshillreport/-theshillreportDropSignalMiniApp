@@ -3,89 +3,66 @@
 import { useState } from "react";
 
 export default function Home() {
-  const [balance, setBalance] = useState(0);
-  const [amount, setAmount] = useState("");
-  const [showDeposit, setShowDeposit] = useState(false);
-  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [balance, setBalance] = useState(0); // Your Balance
+  const [depositAmount, setDepositAmount] = useState(0);
+  const [withdrawAmount, setWithdrawAmount] = useState(0);
+  const [referralBoost, setReferralBoost] = useState(0);
 
-  const apy = 8.4; // example APY
-
-  function deposit() {
-    const value = parseFloat(amount);
-    if (!isNaN(value) && value > 0) {
-      setBalance(prev => prev + value);
-      setAmount("");
-      setShowDeposit(false);
+  // Deposit
+  const handleDeposit = () => {
+    if(depositAmount > 0) {
+      let totalDeposit = depositAmount * (1 + referralBoost/100);
+      setBalance(balance + totalDeposit);
+      setDepositAmount(0);
     }
   }
 
-  function withdraw() {
-    const value = parseFloat(amount);
-    if (!isNaN(value) && value > 0 && value <= balance) {
-      setBalance(prev => prev - value);
-      setAmount("");
-      setShowWithdraw(false);
+  // Withdraw
+  const handleWithdraw = () => {
+    if(withdrawAmount > 0 && withdrawAmount <= balance) {
+      setBalance(balance - withdrawAmount);
+      setWithdrawAmount(0);
     }
+  }
+
+  // Simpler Referral Boost
+  const handleReferral = () => {
+    const boost = 5; // +5% APY boost per invite
+    setReferralBoost(referralBoost + boost);
   }
 
   return (
-    <main>
-      <div className="card">
-        <h1>💰 USDC Yield Vault</h1>
+    <main style={{ padding: 24, fontFamily: "system-ui", maxWidth: 500, margin: "auto" }}>
+      <h1>🚀 DropSignal Yield App</h1>
+      <p>Your Balance: {balance.toFixed(2)} USDC</p>
+      <p>Referral APY Boost: {referralBoost}%</p>
 
-        <p><strong>Your Balance</strong></p>
-        <h2>{balance.toFixed(2)} USDC</h2>
-
-        <p>APY: <strong>{apy}%</strong></p>
-
-        <div style={{ display: "flex", gap: 12, marginTop: 20 }}>
-          <button onClick={() => setShowDeposit(true)}>Deposit</button>
-          <button onClick={() => setShowWithdraw(true)}>Withdraw</button>
-        </div>
+      {/* Deposit */}
+      <div style={{ marginTop: 24 }}>
+        <input 
+          type="number" 
+          placeholder="Amount to deposit" 
+          value={depositAmount}
+          onChange={(e) => setDepositAmount(parseFloat(e.target.value))}
+        />
+        <button onClick={handleDeposit} style={{ marginLeft: 12 }}>Deposit</button>
       </div>
 
-      {(showDeposit || showWithdraw) && (
-        <div style={{
-          position: "fixed",
-          inset: 0,
-          background: "rgba(0,0,0,0.6)",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center"
-        }}>
-          <div className="card">
-            <h3>{showDeposit ? "Deposit USDC" : "Withdraw USDC"}</h3>
+      {/* Withdraw */}
+      <div style={{ marginTop: 16 }}>
+        <input 
+          type="number" 
+          placeholder="Amount to withdraw" 
+          value={withdrawAmount}
+          onChange={(e) => setWithdrawAmount(parseFloat(e.target.value))}
+        />
+        <button onClick={handleWithdraw} style={{ marginLeft: 12 }}>Withdraw</button>
+      </div>
 
-            <input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 8,
-                border: "none",
-                marginBottom: 16
-              }}
-            />
-
-            <button onClick={showDeposit ? deposit : withdraw}>
-              Confirm
-            </button>
-
-            <button
-              style={{ marginLeft: 10, background: "#444" }}
-              onClick={() => {
-                setShowDeposit(false);
-                setShowWithdraw(false);
-              }}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
+      {/* Referral */}
+      <div style={{ marginTop: 24 }}>
+        <button onClick={handleReferral}>Invite Friend → +5% APY</button>
+      </div>
     </main>
   );
 }
