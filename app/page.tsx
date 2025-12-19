@@ -1,14 +1,26 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
-  const { address, isConnected } = useAccount(); // ✅ hier
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
+  const [balance, setBalance] = useState(1245.32);
+  const [dailyReward, setDailyReward] = useState(2.34);
+  const [amount, setAmount] = useState("");
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
 
-  // Rest deines Codes...
-}
+  const apy = 18.4;
+
+  // Auto-Yield pro Sekunde
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBalance(prev => prev + (prev * apy) / 100 / 31536000);
+      setDailyReward(prev => prev + (balance * apy) / 100 / 31536000);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [apy, balance]);
+
   function handleDeposit() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
@@ -34,8 +46,6 @@ export default function Home() {
     setDailyReward(0);
   }
 
-  /* -------------------- UI -------------------- */
-
   return (
     <main style={{ padding: 24, maxWidth: 420, margin: "0 auto" }}>
       <h1 style={{ fontSize: 32 }}>
@@ -43,62 +53,42 @@ export default function Home() {
         <span style={{ color: "#4FD1FF" }}>Signal</span>
       </h1>
 
-      {!isConnected ? (
-        <button
-          style={deposit}
-          onClick={() => connect({ connector: injected() })}
-        >
-          Connect Wallet
+      <p style={{ opacity: 0.7 }}>Deposit USDC. Earn daily yield.</p>
+
+      {/* BALANCE CARD */}
+      <div style={card}>
+        <p style={{ opacity: 0.6 }}>Your Balance</p>
+        <h2>${balance.toFixed(2)} USDC</h2>
+        <p style={{ color: "#4FD1FF" }}>
+          + ${dailyReward.toFixed(2)} today
+        </p>
+      </div>
+
+      {/* YIELD CARD */}
+      <div style={card}>
+        <p style={{ opacity: 0.6 }}>Current APY</p>
+        <h2 style={{ color: "#FF8A00" }}>{apy}%</h2>
+        <p style={{ opacity: 0.6 }}>Compounded daily</p>
+      </div>
+
+      {/* ACTIONS */}
+      <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
+        <button style={deposit} onClick={() => setShowDeposit(true)}>
+          Deposit USDC
         </button>
-      ) : (
-        <>
-          <p style={{ opacity: 0.7 }}>
-            Connected: {address?.slice(0, 6)}…{address?.slice(-4)}
-          </p>
+        <button style={withdrawBtn} onClick={() => setShowWithdraw(true)}>
+          Withdraw
+        </button>
+      </div>
 
-          {/* BALANCE */}
-          <div style={card}>
-            <p style={{ opacity: 0.6 }}>Your Balance</p>
-            <h2>${balance.toFixed(2)} USDC</h2>
-            <p style={{ color: "#4FD1FF" }}>
-              + ${dailyReward.toFixed(4)} today
-            </p>
-          </div>
-
-          {/* APY */}
-          <div style={card}>
-            <p style={{ opacity: 0.6 }}>Current APY</p>
-            <h2 style={{ color: "#FF8A00" }}>{apy}%</h2>
-            <p style={{ opacity: 0.6 }}>Compounded live</p>
-          </div>
-
-          {/* ACTIONS */}
-          <div style={{ display: "flex", gap: 12, marginTop: 16 }}>
-            <button style={deposit} onClick={() => setShowDeposit(true)}>
-              Deposit USDC
-            </button>
-            <button style={withdrawBtn} onClick={() => setShowWithdraw(true)}>
-              Withdraw
-            </button>
-          </div>
-
-          {/* REWARD */}
-          <div style={{ ...card, marginTop: 24 }}>
-            <p style={{ opacity: 0.6 }}>Accrued Reward</p>
-            <h3>+ ${dailyReward.toFixed(4)}</h3>
-            <button style={claim} onClick={claimReward}>
-              Claim
-            </button>
-          </div>
-
-          <button
-            style={{ ...withdrawBtn, marginTop: 20 }}
-            onClick={() => disconnect()}
-          >
-            Disconnect
-          </button>
-        </>
-      )}
+      {/* DAILY REWARD */}
+      <div style={{ ...card, marginTop: 24 }}>
+        <p style={{ opacity: 0.6 }}>Daily Reward</p>
+        <h3>+ ${dailyReward.toFixed(2)}</h3>
+        <button style={claim} onClick={claimReward}>
+          Claim
+        </button>
+      </div>
 
       {/* MODAL */}
       {(showDeposit || showWithdraw) && (
@@ -116,7 +106,7 @@ export default function Home() {
 
             <button
               style={deposit}
-              onClick={showDeposit ? approveAndDeposit : withdraw}
+              onClick={showDeposit ? handleDeposit : handleWithdraw}
             >
               Confirm
             </button>
@@ -138,7 +128,6 @@ export default function Home() {
 }
 
 /* -------------------- STYLES -------------------- */
-
 const card = {
   background: "rgba(255,255,255,0.04)",
   border: "1px solid rgba(79,209,255,0.35)",
