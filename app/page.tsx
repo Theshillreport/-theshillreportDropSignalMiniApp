@@ -1,6 +1,13 @@
-import { useWriteContract } from "wagmi";
+import { useState } from "react";
 
-const { writeContract } = useWriteContract();
+export default function Home() {
+  const [balance, setBalance] = useState(1245.32);
+  const [amount, setAmount] = useState("");
+  const [showDeposit, setShowDeposit] = useState(false);
+  const [showWithdraw, setShowWithdraw] = useState(false);
+  const [dailyReward, setDailyReward] = useState(2.34);
+
+  const apy = 18.4;
 
 function deposit(amount) {
   writeContract({
