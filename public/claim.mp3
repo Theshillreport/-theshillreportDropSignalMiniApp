@@ -1,1 +1,2 @@
-
+const sound = new Audio("/claim.mp3");
+sound.play();
