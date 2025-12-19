@@ -14,7 +14,7 @@ export default function Home() {
       {/* BALANCE CARD */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Your Balance</p>
-        <h2>$1,245.32 USDC</h2>
+        <h2>$0 USDC</h2>
         <p style={{ color: "#4FD1FF" }}>+ $2.34 today</p>
       </div>
 
