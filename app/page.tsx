@@ -4,12 +4,12 @@ export default function Home() {
   return (
     <main
   style={{
-  background: "#18181f",
-  border: "1px solid #2a2a35",
-  borderRadius: 12,
-  padding: 16,
-  marginTop: 12
-}}
+    minHeight: "100vh",
+    padding: 24,
+    fontFamily: "system-ui",
+    background: "linear-gradient(180deg, #0f0f14, #1a1a24)",
+    color: "white"
+  }}
 >
       <h1>🚀 DropSignal</h1>
       <p>Daily onchain drops. Signal &gt; Noise.</p>
