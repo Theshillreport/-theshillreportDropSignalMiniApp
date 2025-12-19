@@ -1,18 +1,18 @@
 export const drops = [
   {
     id: 1,
-    title: "Base Summer NFT",
-    description: "Free mint on Base",
+    title: "BASE Meme Coin",
+    description: "New Base chain meme coin with fair launch",
     chain: "Base",
-    mintUrl: "https://zora.co/collect/base:0x123",
-    date: "2025-01-12"
+    date: "Today",
+    mintUrl: "https://example.com"
   },
   {
     id: 2,
-    title: "Farcaster Badge",
-    description: "Limited FC drop",
-    chain: "Optimism",
-    mintUrl: "https://zora.co/collect/op:0x456",
-    date: "2025-01-12"
+    title: "Solana Utility Token",
+    description: "Early utility token, no presale",
+    chain: "Solana",
+    date: "Today",
+    mintUrl: "https://example.com"
   }
 ];
