@@ -4,27 +4,32 @@ import { useState, useEffect } from "react";
 
 export default function Home() {
   const [balance, setBalance] = useState(1245.32);
+  const [dailyReward, setDailyReward] = useState(2.34);
   const [amount, setAmount] = useState("");
   const [showDeposit, setShowDeposit] = useState(false);
   const [showWithdraw, setShowWithdraw] = useState(false);
-  const [dailyReward, setDailyReward] = useState(2.34);
 
   const apy = 18.4;
 
+  // AUTO YIELD PRO SEKUNDE (UI)
   useEffect(() => {
     const interval = setInterval(() => {
-      setBalance(b =>
-        b + b * apy / 100 / 31536000
+      setBalance(prev =>
+        prev + (prev * apy) / 100 / 31536000
+      );
+
+      setDailyReward(prev =>
+        prev + (balance * apy) / 100 / 31536000
       );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [apy]);
+  }, [apy, balance]);
+
   function handleDeposit() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
       setBalance(prev => prev + value);
-      setDailyReward(prev => prev + value * 0.0018);
       setAmount("");
       setShowDeposit(false);
     }
@@ -34,7 +39,6 @@ export default function Home() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0 && value <= balance) {
       setBalance(prev => prev - value);
-      setDailyReward(prev => Math.max(0, prev - value * 0.0018));
       setAmount("");
       setShowWithdraw(false);
     }
@@ -56,20 +60,20 @@ export default function Home() {
         Deposit USDC. Earn daily yield.
       </p>
 
-      {/* BALANCE CARD */}
+      {/* BALANCE */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Your Balance</p>
         <h2>${balance.toFixed(2)} USDC</h2>
         <p style={{ color: "#4FD1FF" }}>
-          + ${dailyReward.toFixed(2)} today
+          + ${dailyReward.toFixed(4)} today
         </p>
       </div>
 
-      {/* YIELD CARD */}
+      {/* APY */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Current APY</p>
         <h2 style={{ color: "#FF8A00" }}>{apy}%</h2>
-        <p style={{ opacity: 0.6 }}>Compounded daily</p>
+        <p style={{ opacity: 0.6 }}>Compounded live</p>
       </div>
 
       {/* ACTIONS */}
@@ -82,10 +86,10 @@ export default function Home() {
         </button>
       </div>
 
-      {/* DAILY REWARD */}
+      {/* REWARD */}
       <div style={{ ...card, marginTop: 24 }}>
-        <p style={{ opacity: 0.6 }}>Daily Reward</p>
-        <h3>+ ${dailyReward.toFixed(2)}</h3>
+        <p style={{ opacity: 0.6 }}>Accrued Reward</p>
+        <h3>+ ${dailyReward.toFixed(4)}</h3>
         <button style={claim} onClick={claimReward}>
           Claim
         </button>
@@ -113,7 +117,7 @@ export default function Home() {
             </button>
 
             <button
-              style={{ ...withdraw, marginTop: 8 }}
+              style={{ ...withdraw, marginTop: 10 }}
               onClick={() => {
                 setShowDeposit(false);
                 setShowWithdraw(false);
@@ -128,7 +132,7 @@ export default function Home() {
   );
 }
 
-/* STYLES (UNVERÄNDERT) */
+/* STYLES */
 
 const card = {
   background: "rgba(255,255,255,0.04)",
@@ -144,7 +148,7 @@ const deposit = {
   padding: 14,
   borderRadius: 12,
   background: "linear-gradient(135deg,#FF8A00,#FFB347)",
-  color: "black",
+  color: "#000",
   fontWeight: 700,
   border: "none",
   width: "100%"
