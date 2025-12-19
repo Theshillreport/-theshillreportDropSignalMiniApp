@@ -1,31 +1,22 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: system-ui, -apple-system, BlinkMacSystemFont;
-  background: linear-gradient(135deg, #ff8a00, #4facfe);
-  min-height: 100vh;
-  color: white;
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  background: linear-gradient(135deg, #FFA500 0%, #87CEFA 100%);
+  height: 100%;
+  color: #fff;
 }
 
 button {
-  background: #111;
-  color: white;
+  padding: 10px 16px;
   border: none;
-  border-radius: 10px;
-  padding: 12px 18px;
-  font-weight: 600;
+  border-radius: 8px;
+  background-color: #fff;
+  color: #333;
   cursor: pointer;
+  font-weight: bold;
 }
 
 button:hover {
-  opacity: 0.9;
-}
-
-.card {
-  background: rgba(0,0,0,0.35);
-  backdrop-filter: blur(10px);
-  border-radius: 20px;
-  padding: 24px;
-  max-width: 420px;
-  margin: 80px auto;
+  opacity: 0.8;
 }
