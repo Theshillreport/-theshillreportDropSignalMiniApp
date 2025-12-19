@@ -1,3 +1,5 @@
+"use client";
+
 import { useState } from "react";
 
 export default function Home() {
@@ -9,89 +11,24 @@ export default function Home() {
 
   const apy = 18.4;
 
-function deposit(amount) {
-  writeContract({
-    address: VAULT_ADDRESS,
-    abi: vaultAbi,
-    functionName: "deposit",
-    args: [amount]
-  });
-}
-
-import {
-  USDC_ADDRESS,
-  VAULT_ADDRESS,
-  usdcAbi,
-  vaultAbi,
-} from "../lib/contracts";
-
-export default function Home() {
-  /* -------------------- WALLET -------------------- */
-  const { address, isConnected } = useAccount();
-  const { connect } = useConnect();
-  const { disconnect } = useDisconnect();
-  const { writeContract } = useWriteContract();
-
-  /* -------------------- STATE -------------------- */
-  const [balance, setBalance] = useState(1245.32); // UI only
-  const [dailyReward, setDailyReward] = useState(2.34); // UI only
-  const [amount, setAmount] = useState("");
-  const [showDeposit, setShowDeposit] = useState(false);
-  const [showWithdraw, setShowWithdraw] = useState(false);
-
-  const apy = 18.4;
-
-  /* -------------------- AUTO YIELD (UI) -------------------- */
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setBalance(prev => prev + (prev * apy) / 100 / 31536000);
-      setDailyReward(prev => prev + (balance * apy) / 100 / 31536000);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [apy, balance]);
-
-  /* -------------------- CONTRACT ACTIONS -------------------- */
-
-  async function approveAndDeposit() {
-    if (!amount) return;
-
-    const value = parseUnits(amount, 6); // USDC = 6 decimals
-
-    // 1️⃣ APPROVE USDC
-    writeContract({
-      address: USDC_ADDRESS,
-      abi: usdcAbi,
-      functionName: "approve",
-      args: [VAULT_ADDRESS, value],
-    });
-
-    // 2️⃣ DEPOSIT
-    writeContract({
-      address: VAULT_ADDRESS,
-      abi: vaultAbi,
-      functionName: "deposit",
-      args: [value],
-    });
-
-    setShowDeposit(false);
-    setAmount("");
+  function handleDeposit() {
+    const value = parseFloat(amount);
+    if (!isNaN(value) && value > 0) {
+      setBalance(prev => prev + value);
+      setDailyReward(prev => prev + value * 0.0018);
+      setAmount("");
+      setShowDeposit(false);
+    }
   }
 
-  async function withdraw() {
-    if (!amount) return;
-
-    const value = parseUnits(amount, 6);
-
-    writeContract({
-      address: VAULT_ADDRESS,
-      abi: vaultAbi,
-      functionName: "withdraw",
-      args: [value],
-    });
-
-    setShowWithdraw(false);
-    setAmount("");
+  function handleWithdraw() {
+    const value = parseFloat(amount);
+    if (!isNaN(value) && value > 0 && value <= balance) {
+      setBalance(prev => prev - value);
+      setDailyReward(prev => Math.max(0, prev - value * 0.0018));
+      setAmount("");
+      setShowWithdraw(false);
+    }
   }
 
   function claimReward() {
