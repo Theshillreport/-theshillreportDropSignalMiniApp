@@ -3,6 +3,7 @@ import { drops } from "./data/drops";
 export default function Home() {
   return (
     <main
+  <main
   style={{
     minHeight: "100vh",
     padding: 24,
@@ -10,6 +11,7 @@ export default function Home() {
     background: "linear-gradient(180deg, #0f0f14, #1a1a24)",
     color: "white"
   }}
+>
       {drops.map(drop => (
         <div key={drop.id} style={{
           border: "1px solid #eee",
