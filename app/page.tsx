@@ -14,14 +14,14 @@ export default function Home() {
       {/* BALANCE CARD */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Your Balance</p>
-        <h2>$1,245.32 USDC</h2>
-        <p style={{ color: "#4FD1FF" }}>+ $2.34 today</p>
+        <h2>$0 USDC</h2>
+        <p style={{ color: "#4FD1FF" }}>+ $0 today</p>
       </div>
 
       {/* YIELD CARD */}
       <div style={card}>
         <p style={{ opacity: 0.6 }}>Current APY</p>
-        <h2 style={{ color: "#FF8A00" }}>18.4%</h2>
+        <h2 style={{ color: "#FF8A00" }}>0%</h2>
         <p style={{ opacity: 0.6 }}>Compounded daily</p>
       </div>
 
@@ -34,7 +34,7 @@ export default function Home() {
       {/* DAILY REWARD */}
       <div style={{ ...card, marginTop: 24 }}>
         <p style={{ opacity: 0.6 }}>Daily Reward</p>
-        <h3>+ $2.34</h3>
+        <h3>+ $0</h3>
         <button style={claim}>Claim</button>
       </div>
 
