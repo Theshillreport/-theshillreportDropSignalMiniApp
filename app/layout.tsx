@@ -1,3 +1,8 @@
+"use client";
+
+import { WagmiProvider } from "wagmi";
+import { wagmiConfig } from "../lib/wagmi";
+
 export default function RootLayout({
   children,
 }: {
@@ -5,7 +10,11 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        <WagmiProvider config={wagmiConfig}>
+          {children}
+        </WagmiProvider>
+      </body>
     </html>
   );
 }
