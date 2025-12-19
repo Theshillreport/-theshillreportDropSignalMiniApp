@@ -1,38 +1,26 @@
-'use client'
-
-import { useState } from 'react'
+import { drops } from "./data/drops";
 
 export default function Home() {
-  const [message, setMessage] = useState('')
-
-  function handleClick() {
-    setMessage('🔥 Today’s Drop: BASE / Free Mint / 0.002 ETH')
-  }
-
   return (
-    <main style={{ padding: 40, fontFamily: 'system-ui' }}>
+    <main style={{ padding: 24, fontFamily: "system-ui" }}>
       <h1>🚀 DropSignal</h1>
       <p>Daily onchain drops. Signal &gt; Noise.</p>
 
-      <button
-        onClick={handleClick}
-        style={{
-          padding: '12px 20px',
-          borderRadius: 20,
-          border: 'none',
-          background: '#e5e7eb',
-          fontSize: 16,
-          cursor: 'pointer'
-        }}
-      >
-        Mint Today
-      </button>
-
-      {message && (
-        <div style={{ marginTop: 20 }}>
-          <strong>{message}</strong>
+      {drops.map(drop => (
+        <div key={drop.id} style={{
+          border: "1px solid #eee",
+          borderRadius: 12,
+          padding: 16,
+          marginTop: 12
+        }}>
+          <h3>{drop.title}</h3>
+          <p>{drop.description}</p>
+          <small>{drop.chain} • {drop.date}</small><br />
+          <a href={drop.mintUrl} target="_blank">
+            <button style={{ marginTop: 8 }}>Mint</button>
+          </a>
         </div>
-      )}
+      ))}
     </main>
-  )
+  );
 }
