@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export default function Home() {
   const [balance, setBalance] = useState(1245.32);
@@ -10,6 +10,7 @@ export default function Home() {
   const [dailyReward, setDailyReward] = useState(2.34);
 
   const apy = 18.4;
+
   useEffect(() => {
     const interval = setInterval(() => {
       setBalance(b =>
