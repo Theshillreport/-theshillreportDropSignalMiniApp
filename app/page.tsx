@@ -34,7 +34,7 @@ export default function Home() {
       {/* DAILY REWARD */}
       <div style={{ ...card, marginTop: 24 }}>
         <p style={{ opacity: 0.6 }}>Daily Reward</p>
-        <h3>+ $2.34</h3>
+        <h3>+ $0</h3>
         <button style={claim}>Claim</button>
       </div>
 
