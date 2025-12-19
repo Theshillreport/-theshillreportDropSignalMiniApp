@@ -1,14 +1,15 @@
-"use client";
+import { useWriteContract } from "wagmi";
 
-import { useState, useEffect } from "react";
-import {
-  useAccount,
-  useConnect,
-  useDisconnect,
-  useWriteContract,
-} from "wagmi";
-import { injected } from "wagmi/connectors";
-import { parseUnits } from "viem";
+const { writeContract } = useWriteContract();
+
+function deposit(amount) {
+  writeContract({
+    address: VAULT_ADDRESS,
+    abi: vaultAbi,
+    functionName: "deposit",
+    args: [amount]
+  });
+}
 
 import {
   USDC_ADDRESS,
