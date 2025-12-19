@@ -13,7 +13,7 @@ contract DropSignalVault {
 
     mapping(address => uint256) public balances;
 
-    constructor(address _usdc, address _feeReceiver) {
+    constructor(0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69) {
         usdc = IERC20(_usdc);
         feeReceiver = _feeReceiver;
     }
