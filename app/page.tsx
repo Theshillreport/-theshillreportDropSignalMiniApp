@@ -16,7 +16,7 @@ export default function Home() {
       setDailyReward(prev => prev + (prev * apy) / 100 / 31536000);
     }, 1000);
     return () => clearInterval(interval);
-  }, [apy, balance]);
+  }, [apy]);
 
   function handleDeposit() {
     const value = parseFloat(amount);
@@ -36,11 +36,11 @@ export default function Home() {
   // Coins Animation
   const [coins, setCoins] = useState<any[]>([]);
   useEffect(() => {
-    const arr = Array.from({ length: 50 }).map(() => ({
+    const arr = Array.from({ length: 80 }).map(() => ({
       id: Math.random(),
       left: Math.random() * 100,
-      size: 16 + Math.random() * 24,
-      speed: 1 + Math.random() * 2,
+      size: 4 + Math.random() * 6, // sehr kleine Kreise
+      speed: 0.5 + Math.random() * 1.5,
       hue: Math.random() * 360,
       offset: Math.random() * 100
     }));
@@ -50,26 +50,28 @@ export default function Home() {
   return (
     <main style={{ padding: 24, maxWidth: 420, margin: "0 auto", position: "relative", overflow: "hidden", minHeight: "100vh", background: "linear-gradient(135deg, #FF8A00 70%, #4FD1FF 30%)" }}>
       
-      {/* Coins Hintergrund */}
+      {/* Minimalistische Coins Hintergrund */}
       {coins.map(coin => (
-        <span
+        <div
           key={coin.id}
           style={{
             position: "absolute",
             left: `${coin.left}%`,
-            fontSize: coin.size,
-            color: `hsl(${coin.hue},80%,50%)`,
+            width: coin.size,
+            height: coin.size,
+            borderRadius: "50%",
+            backgroundColor: `hsl(${coin.hue},70%,70%)`,
             top: `${(Date.now()/50*coin.speed + coin.offset)%120}%`,
             transform: "translateY(-50%)",
             pointerEvents: "none",
             userSelect: "none",
             zIndex: 0,
-            opacity: 0.3
+            opacity: 0.5
           }}
-        >💰</span>
+        />
       ))}
 
-      {/* Alle Inhalte im Vordergrund */}
+      {/* Vordergrund Inhalt */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <h1 style={{ fontSize: 32 }}>
           🚀 <span style={{ color: "#FF8A00" }}>Drop</span>
