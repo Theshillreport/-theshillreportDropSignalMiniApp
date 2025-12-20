@@ -3,26 +3,30 @@
 import { useState, useEffect } from "react";
 
 export default function Home() {
-  const [balance, setBalance] = useState(1245.32);
-  const [dailyReward, setDailyReward] = useState(2.34);
+  // Nutzer startet bei 0
+  const [balance, setBalance] = useState(0);
+  const [dailyReward, setDailyReward] = useState(0);
   const [amount, setAmount] = useState("");
   const [showDeposit, setShowDeposit] = useState(false);
-  const apy = 18.4;
+  const apy = 18.4; // APY für Simulation
 
-  // Auto-Yield pro Sekunde
+  // Auto-Yield pro Sekunde aktiv, sobald Balance > 0
   useEffect(() => {
     const interval = setInterval(() => {
-      setBalance(prev => prev + (prev * apy) / 100 / 31536000);
-      setDailyReward(prev => prev + (prev * apy) / 100 / 31536000);
+      if (balance > 0) {
+        const increment = (balance * apy) / 100 / 31536000;
+        setBalance(prev => prev + increment);
+        setDailyReward(prev => prev + increment);
+      }
     }, 1000);
     return () => clearInterval(interval);
-  }, [apy]);
+  }, [balance, apy]);
 
   function handleDeposit() {
     const value = parseFloat(amount);
     if (!isNaN(value) && value > 0) {
       setBalance(prev => prev + value);
-      setDailyReward(prev => prev + value * 0.0018);
+      setDailyReward(prev => prev + value * 0.0018); // Start Reward
       setAmount("");
       setShowDeposit(false);
     }
@@ -39,7 +43,7 @@ export default function Home() {
     const arr = Array.from({ length: 80 }).map(() => ({
       id: Math.random(),
       left: Math.random() * 100,
-      size: 4 + Math.random() * 6, // sehr kleine Kreise
+      size: 4 + Math.random() * 6,
       speed: 0.5 + Math.random() * 1.5,
       hue: Math.random() * 360,
       offset: Math.random() * 100
@@ -50,7 +54,7 @@ export default function Home() {
   return (
     <main style={{ padding: 24, maxWidth: 420, margin: "0 auto", position: "relative", overflow: "hidden", minHeight: "100vh", background: "linear-gradient(135deg, #FF8A00 70%, #4FD1FF 30%)" }}>
       
-      {/* Minimalistische Coins Hintergrund */}
+      {/* Hintergrund Coins */}
       {coins.map(coin => (
         <div
           key={coin.id}
@@ -71,21 +75,24 @@ export default function Home() {
         />
       ))}
 
-      {/* Vordergrund Inhalt */}
+      {/* Vordergrund Inhalte */}
       <div style={{ position: "relative", zIndex: 1 }}>
         <h1 style={{ fontSize: 32 }}>
           🚀 <span style={{ color: "#FF8A00" }}>Drop</span>
           <span style={{ color: "#4FD1FF" }}>Signal</span>
         </h1>
 
+        {/* Balance Card */}
         <div style={card}>
           <p style={{ opacity: 0.6 }}>Your Balance</p>
           <h2>${balance.toFixed(2)} USDC</h2>
           <p style={{ color: "#4FD1FF" }}>+ ${dailyReward.toFixed(2)} today</p>
         </div>
 
+        {/* Deposit Button */}
         <button style={deposit} onClick={() => setShowDeposit(true)}>Deposit USDC</button>
 
+        {/* Deposit Overlay */}
         {showDeposit && (
           <div style={overlay}>
             <input type="number" placeholder="Amount" value={amount} onChange={e=>setAmount(e.target.value)} style={input}/>
@@ -94,6 +101,7 @@ export default function Home() {
           </div>
         )}
 
+        {/* Daily Reward */}
         <div style={{ ...card, marginTop: 24 }}>
           <p style={{ opacity: 0.6 }}>Daily Reward</p>
           <h3>+ ${dailyReward.toFixed(2)}</h3>
