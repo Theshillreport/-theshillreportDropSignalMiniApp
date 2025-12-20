@@ -5,10 +5,10 @@ export const metadata = {
   description: "Deposit. Earn. Signal.",
   other: {
     "fc:frame": "vNext",
-    "fc:frame:image": "https://DEINE-VERCEL-URL.vercel.app/preview.png",
+    "fc:frame:image": "https://theshillreport-drop-signal-mini-app-jade.vercel.app/",
     "fc:frame:button:1": "Open DropSignal",
     "fc:frame:button:1:action": "link",
-    "fc:frame:button:1:target": "https://DEINE-VERCEL-URL.vercel.app",
+    "fc:frame:button:1:target": "https://theshillreport-drop-signal-mini-app-jade.vercel.app/",
   },
 };
 
