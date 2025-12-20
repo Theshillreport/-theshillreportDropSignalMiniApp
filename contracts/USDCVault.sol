@@ -2,79 +2,55 @@
 pragma solidity ^0.8.20;
 
 interface IERC20 {
-    function transfer(address to, uint amount) external returns (bool);
-    function transferFrom(address from, address to, uint amount) external returns (bool);
-    function balanceOf(address user) external view returns (uint);
+    function transferFrom(address, address, uint256) external returns (bool);
+    function transfer(address, uint256) external returns (bool);
+    function balanceOf(address) external view returns (uint256);
 }
 
-contract USDCVault {
+contract DropSignalVault {
     IERC20 public immutable usdc;
-    address public feeRecipient;
+    address public owner;
 
-    uint256 public constant PERFORMANCE_FEE = 50; // 50%
+    uint256 public constant APY = 720; // 7.20%
+    uint256 public constant FEE = 20;  // 20% performance fee
 
-    struct User {
-        uint256 deposited;
-        uint256 claimed;
-    }
+    mapping(address => uint256) public deposited;
+    mapping(address => uint256) public lastUpdate;
 
-    mapping(address => User) public users;
-    uint256 public totalDeposits;
-
-    constructor(address _usdc, address _feeRecipient) {
+    constructor(address _usdc) {
         usdc = IERC20(_usdc);
-        feeRecipient = _feeRecipient;
+        owner = msg.sender;
     }
 
-    // ------------------------
-    // DEPOSIT
-    // ------------------------
     function deposit(uint256 amount) external {
-        require(amount > 0, "Zero amount");
-
+        _accrue(msg.sender);
         usdc.transferFrom(msg.sender, address(this), amount);
-
-        users[msg.sender].deposited += amount;
-        totalDeposits += amount;
+        deposited[msg.sender] += amount;
     }
 
-    // ------------------------
-    // WITHDRAW (PRINCIPAL + YIELD)
-    // ------------------------
     function withdraw(uint256 amount) external {
-        User storage user = users[msg.sender];
-        require(amount > 0, "Zero amount");
-        require(amount <= getWithdrawable(msg.sender), "Too much");
+        _accrue(msg.sender);
+        deposited[msg.sender] -= amount;
+        usdc.transfer(msg.sender, amount);
+    }
 
-        uint256 profit = getProfit(msg.sender);
-        uint256 fee = (profit * PERFORMANCE_FEE) / 100;
+    function earned(address user) public view returns (uint256) {
+        uint256 time = block.timestamp - lastUpdate[user];
+        return (deposited[user] * APY * time) / 10000 / 365 days;
+    }
 
-        if (fee > 0) {
-            usdc.transfer(feeRecipient, fee);
+    function claim() external {
+        uint256 reward = earned(msg.sender);
+        uint256 fee = (reward * FEE) / 100;
+        lastUpdate[msg.sender] = block.timestamp;
+
+        usdc.transfer(owner, fee);
+        usdc.transfer(msg.sender, reward - fee);
+    }
+
+    function _accrue(address user) internal {
+        if (lastUpdate[user] == 0) {
+            lastUpdate[user] = block.timestamp;
         }
-
-        usdc.transfer(msg.sender, amount - fee);
-
-        user.claimed += amount;
-    }
-
-    // ------------------------
-    // VIEW FUNCTIONS
-    // ------------------------
-    function getProfit(address userAddr) public view returns (uint256) {
-        uint256 balance = usdc.balanceOf(address(this));
-        if (totalDeposits == 0) return 0;
-
-        uint256 userShare =
-            (balance * users[userAddr].deposited) / totalDeposits;
-
-        if (userShare <= users[userAddr].deposited) return 0;
-
-        return userShare - users[userAddr].deposited;
-    }
-
-    function getWithdrawable(address userAddr) public view returns (uint256) {
-        return users[userAddr].deposited + getProfit(userAddr)
-            - users[userAddr].claimed;
     }
 }
