@@ -74,7 +74,7 @@ export default function Page() {
 
         <div style={apyBox}>
           <span>Current APY</span>
-          <strong>18.4% • live</strong>
+          <strong>0% • live</strong>
         </div>
 
         <div style={inviteBox}>
