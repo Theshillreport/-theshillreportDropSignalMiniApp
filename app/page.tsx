@@ -1,178 +1,232 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 export default function Page() {
+  // --------------------
+  // Core State
+  // --------------------
   const [deposit, setDeposit] = useState(0);
-  const [rewards, setRewards] = useState(0);
-  const [amount, setAmount] = useState("");
+  const [balance, setBalance] = useState(0);
+  const [apy] = useState(12); // base APY
+  const [boost, setBoost] = useState(0);
+  const [email, setEmail] = useState("");
+  const [refInput, setRefInput] = useState("");
 
-  const APY = 18.4;
+  // --------------------
+  // Referral
+  // --------------------
+  const referralCode = useMemo(
+    () => Math.random().toString(36).substring(2, 10).toUpperCase(),
+    []
+  );
 
-  // Live Earnings pro Sekunde
+  const inviteLink = `https://your-app.vercel.app/?ref=${referralCode}`;
+
+  const applyReferral = () => {
+    if (refInput.length >= 6) {
+      setBoost(0.5);
+      alert("Referral applied! +0.5% APY boost for 30 days");
+    }
+  };
+
+  // --------------------
+  // Earnings Simulation
+  // --------------------
   useEffect(() => {
     if (deposit <= 0) return;
 
     const interval = setInterval(() => {
-      setRewards(r => r + deposit * APY / 100 / 31536000);
+      setBalance((b) => b + deposit * ((apy + boost) / 100 / 86400));
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [deposit]);
+  }, [deposit, apy, boost]);
 
-  function handleDeposit() {
-    const v = parseFloat(amount);
-    if (isNaN(v) || v <= 0) return;
-    setDeposit(d => d + v);
-    setAmount("");
-  }
-
-  function handleWithdraw() {
-    const v = parseFloat(amount);
-    if (isNaN(v) || v <= 0) return;
-
-    const total = deposit + rewards;
-    if (v > total) return;
-
-    if (rewards >= v) {
-      setRewards(r => r - v);
-    } else {
-      const rest = v - rewards;
-      setRewards(0);
-      setDeposit(d => Math.max(0, d - rest));
-    }
-
-    setAmount("");
-  }
+  // --------------------
+  // Background Coins
+  // --------------------
+  const coins = useMemo(
+    () =>
+      Array.from({ length: 70 }).map((_, i) => ({
+        id: i,
+        left: Math.random() * 100,
+        size: Math.random() * 6 + 2,
+        delay: Math.random() * 10,
+        duration: Math.random() * 20 + 10,
+        color: ["#ff8a00", "#4fd1ff", "#3cff8f", "#ff4f4f"][
+          Math.floor(Math.random() * 4)
+        ],
+      })),
+    []
+  );
 
   return (
-    <main style={container}>
-      <div className="coins" />
+    <main style={styles.page}>
+      {/* Background Coins */}
+      <div style={styles.bg}>
+        {coins.map((c) => (
+          <span
+            key={c.id}
+            style={{
+              ...styles.coin,
+              left: `${c.left}%`,
+              width: c.size,
+              height: c.size,
+              background: c.color,
+              animationDelay: `${c.delay}s`,
+              animationDuration: `${c.duration}s`,
+            }}
+          />
+        ))}
+      </div>
 
-      <section style={card}>
-        <h1 style={title}>🚀 DropSignal</h1>
+      {/* UI */}
+      <div style={styles.container}>
+        <h1 style={styles.title}>REWARD HUB</h1>
 
-        <p style={subtitle}>Deposit USDC. Earn live yield.</p>
+        {/* Referral */}
+        <section style={styles.card}>
+          <label style={styles.label}>YOUR REFERRAL CODE</label>
+          <div style={styles.row}>
+            <span>{referralCode}</span>
+            <button onClick={() => navigator.clipboard.writeText(referralCode)}>
+              Copy
+            </button>
+          </div>
 
-        <div style={box}>
-          <p style={label}>Deposited</p>
-          <h2>${deposit.toFixed(2)} USDC</h2>
-          <p style={green}>+ ${rewards.toFixed(4)} earned</p>
-        </div>
+          <label style={styles.label}>YOUR INVITE LINK</label>
+          <div style={styles.row}>
+            <span style={{ fontSize: 12 }}>{inviteLink}</span>
+            <button onClick={() => navigator.clipboard.writeText(inviteLink)}>
+              Copy
+            </button>
+          </div>
 
-        <input
-          style={input}
-          placeholder="Amount"
-          type="number"
-          value={amount}
-          onChange={e => setAmount(e.target.value)}
-        />
+          <p style={styles.small}>
+            Share to earn +0.5% APY boost for 30 days when friends deposit.
+          </p>
+        </section>
 
-        <div style={row}>
-          <button style={primary} onClick={handleDeposit}>Deposit</button>
-          <button style={secondary} onClick={handleWithdraw}>Withdraw</button>
-        </div>
+        {/* Apply Referral */}
+        <section style={styles.card}>
+          <label style={styles.label}>HAVE A REFERRAL CODE?</label>
+          <div style={styles.row}>
+            <input
+              placeholder="Enter code"
+              value={refInput}
+              onChange={(e) => setRefInput(e.target.value)}
+            />
+            <button onClick={applyReferral}>Apply</button>
+          </div>
+        </section>
 
-        <div style={box}>
-          <p style={label}>Current APY</p>
-          <h3>{APY}% (live)</h3>
-        </div>
-      </section>
+        {/* Deposit */}
+        <section style={styles.card}>
+          <label style={styles.label}>DEPOSIT (USDC)</label>
+          <div style={styles.row}>
+            <input
+              type="number"
+              placeholder="0.00"
+              onChange={(e) => setDeposit(Number(e.target.value))}
+            />
+            <button>Deposit</button>
+          </div>
 
-      {/* FLOATING COINS BACKGROUND */}
-      <style jsx>{`
-        .coins {
-          position: fixed;
-          inset: 0;
-          z-index: -1;
-          background:
-            radial-gradient(circle at 10% 20%, #ff8a0040, transparent 35%),
-            radial-gradient(circle at 80% 30%, #4fd1ff40, transparent 35%),
-            radial-gradient(circle at 50% 80%, #22c55e40, transparent 35%),
-            #020617;
-          animation: float 12s ease-in-out infinite alternate;
-        }
+          <p style={styles.small}>
+            APY: {(apy + boost).toFixed(2)}%
+          </p>
+          <p style={styles.small}>
+            Earnings: {balance.toFixed(6)} USDC
+          </p>
+        </section>
 
+        {/* Email */}
+        <section style={styles.cardBlue}>
+          <h3>Stay in the loop</h3>
+          <p>
+            Subscribe to receive vault news, yield announcements and early
+            feature previews.
+          </p>
+          <input
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button onClick={() => alert("Subscribed!")}>Notify me</button>
+        </section>
+      </div>
+
+      {/* Animations */}
+      <style>{`
         @keyframes float {
-          from { background-position: 0% 0%, 100% 0%, 50% 100%; }
-          to   { background-position: 10% 10%, 90% 20%, 60% 90%; }
+          from { transform: translateY(110vh); }
+          to { transform: translateY(-10vh); }
         }
       `}</style>
     </main>
   );
 }
 
-/* STYLES */
-
-const container = {
-  minHeight: "100vh",
-  display: "flex",
-  justifyContent: "center",
-  alignItems: "center",
-  padding: 24,
-  color: "white"
-};
-
-const card = {
-  width: "100%",
-  maxWidth: 420,
-  background: "rgba(255,255,255,0.04)",
-  borderRadius: 20,
-  padding: 24,
-  backdropFilter: "blur(12px)"
-};
-
-const title = {
-  fontSize: 32,
-  textAlign: "center" as const
-};
-
-const subtitle = {
-  textAlign: "center" as const,
-  opacity: 0.7
-};
-
-const box = {
-  marginTop: 16
-};
-
-const label = {
-  opacity: 0.6,
-  fontSize: 12
-};
-
-const green = {
-  color: "#4ade80"
-};
-
-const row = {
-  display: "flex",
-  gap: 12,
-  marginTop: 12
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  border: "none",
-  marginTop: 8
-};
-
-const primary = {
-  flex: 1,
-  padding: 12,
-  borderRadius: 12,
-  background: "linear-gradient(135deg,#FF8A00,#4FD1FF)",
-  border: "none",
-  fontWeight: 700
-};
-
-const secondary = {
-  flex: 1,
-  padding: 12,
-  borderRadius: 12,
-  background: "transparent",
-  border: "1px solid #4FD1FF",
-  color: "#4FD1FF"
+// --------------------
+// Styles
+// --------------------
+const styles: any = {
+  page: {
+    minHeight: "100vh",
+    background: "#050b1e",
+    color: "#fff",
+    overflow: "hidden",
+  },
+  bg: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 0,
+  },
+  coin: {
+    position: "absolute",
+    bottom: "-10vh",
+    borderRadius: "50%",
+    opacity: 0.6,
+    animationName: "float",
+    animationTimingFunction: "linear",
+    animationIterationCount: "infinite",
+  },
+  container: {
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 420,
+    margin: "0 auto",
+    padding: 20,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 20,
+    letterSpacing: 2,
+  },
+  card: {
+    background: "rgba(255,255,255,0.04)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardBlue: {
+    background: "linear-gradient(135deg,#0a1f4d,#123a8a)",
+    borderRadius: 20,
+    padding: 20,
+  },
+  label: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  row: {
+    display: "flex",
+    gap: 8,
+    marginTop: 8,
+  },
+  small: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 6,
+  },
 };
