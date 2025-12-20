@@ -4,16 +4,15 @@ import { useEffect, useState } from "react";
 
 export default function Page() {
   const [deposit, setDeposit] = useState(0);
-  const [earnings, setEarnings] = useState(0);
+  const [earned, setEarned] = useState(0);
   const [amount, setAmount] = useState("");
 
-  const APY = 18.4;
+  const APY = 7.2;
 
-  // Live Yield pro Sekunde
   useEffect(() => {
     if (deposit <= 0) return;
     const interval = setInterval(() => {
-      setEarnings(e => e + deposit * APY / 100 / 31536000);
+      setEarned(e => e + deposit * APY / 100 / 31536000);
     }, 1000);
     return () => clearInterval(interval);
   }, [deposit]);
@@ -28,14 +27,14 @@ export default function Page() {
   function handleWithdraw() {
     const v = parseFloat(amount);
     if (isNaN(v) || v <= 0) return;
-    const total = deposit + earnings;
+    const total = deposit + earned;
     if (v > total) return;
 
-    if (earnings >= v) {
-      setEarnings(e => e - v);
+    if (earned >= v) {
+      setEarned(e => e - v);
     } else {
-      const rest = v - earnings;
-      setEarnings(0);
+      const rest = v - earned;
+      setEarned(0);
       setDeposit(d => Math.max(0, d - rest));
     }
     setAmount("");
@@ -46,19 +45,35 @@ export default function Page() {
       <FloatingCoins />
 
       <section style={card}>
-        <h1 style={title}>DropSignal</h1>
-        <p style={subtitle}>Deposit. Earn. Signal.</p>
+        {/* LOGO */}
+        <div style={logo}>◉))) <span>DropSignal</span></div>
 
-        <div style={panel}>
-          <p style={label}>Deposited</p>
-          <h2>${deposit.toFixed(2)} USDC</h2>
-          <p style={green}>+ ${earnings.toFixed(4)} earned</p>
+        {/* HERO */}
+        <h1 style={hero}>DEPOSIT USDC TO EARN YIELD</h1>
+
+        <div style={apyBox}>
+          <div style={apy}>{APY}%</div>
+          <div style={apyLabel}>APY</div>
         </div>
 
+        {/* BALANCE */}
+        <div style={section}>
+          <p style={label}>YOUR BALANCE</p>
+          <h2>${(deposit + earned).toFixed(2)}</h2>
+        </div>
+
+        {/* BOOSTS */}
+        <div style={section}>
+          <p style={label}>EARN YOUR BOOSTS</p>
+          <div style={boost}>🔒 WELCOME BOOST <span>+0.00%</span></div>
+          <div style={boost}>🔒 REFERRAL BOOST <span>+0.00%</span></div>
+        </div>
+
+        {/* ACTIONS */}
         <input
           style={input}
           type="number"
-          placeholder="Amount"
+          placeholder="USDC amount"
           value={amount}
           onChange={e => setAmount(e.target.value)}
         />
@@ -68,9 +83,17 @@ export default function Page() {
           <button style={secondary} onClick={handleWithdraw}>Withdraw</button>
         </div>
 
-        <div style={panel}>
-          <p style={label}>Current APY</p>
-          <h3>{APY}% • live</h3>
+        <p style={available}>Available: {(deposit + earned).toFixed(2)} USDC</p>
+
+        {/* REWARD HUB */}
+        <div style={rewardHub}>
+          <h3>REWARD HUB</h3>
+          <p style={muted}>
+            Stay in the loop. Get early access to DropSignal updates.
+          </p>
+
+          <input style={input} placeholder="email@example.com" />
+          <button style={primary}>Notify me</button>
         </div>
       </section>
     </main>
@@ -80,18 +103,15 @@ export default function Page() {
 /* ---------------- FLOATING COINS ---------------- */
 
 function FloatingCoins() {
-  const coins = Array.from({ length: 60 });
-
   return (
     <div style={coinLayer}>
-      {coins.map((_, i) => (
+      {Array.from({ length: 80 }).map((_, i) => (
         <span
           key={i}
           style={{
             ...coin,
             left: `${Math.random() * 100}%`,
-            animationDuration: `${10 + Math.random() * 20}s`,
-            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${12 + Math.random() * 20}s`,
             background: randomColor()
           }}
         />
@@ -119,28 +139,46 @@ const container = {
 
 const card = {
   width: "100%",
-  maxWidth: 420,
-  background: "rgba(255,255,255,0.05)",
-  borderRadius: 24,
+  maxWidth: 440,
+  background: "rgba(255,255,255,0.06)",
+  borderRadius: 28,
   padding: 28,
-  backdropFilter: "blur(16px)",
+  backdropFilter: "blur(18px)",
   zIndex: 2
 };
 
-const title = {
-  fontSize: 32,
-  textAlign: "center" as const,
+const logo = {
+  display: "flex",
+  gap: 8,
+  alignItems: "center",
+  fontWeight: 700,
+  fontSize: 18,
+  marginBottom: 12
+};
+
+const hero = {
+  fontSize: 22,
+  lineHeight: 1.2
+};
+
+const apyBox = {
+  display: "flex",
+  alignItems: "baseline",
+  gap: 8,
+  marginTop: 8
+};
+
+const apy = {
+  fontSize: 36,
   fontWeight: 700
 };
 
-const subtitle = {
-  textAlign: "center" as const,
-  opacity: 0.7,
-  marginBottom: 16
+const apyLabel = {
+  opacity: 0.6
 };
 
-const panel = {
-  marginTop: 16
+const section = {
+  marginTop: 20
 };
 
 const label = {
@@ -148,22 +186,25 @@ const label = {
   opacity: 0.6
 };
 
-const green = {
-  color: "#4ade80"
+const boost = {
+  display: "flex",
+  justifyContent: "space-between",
+  opacity: 0.7,
+  marginTop: 6
+};
+
+const input = {
+  width: "100%",
+  padding: 14,
+  borderRadius: 14,
+  border: "none",
+  marginTop: 12
 };
 
 const row = {
   display: "flex",
   gap: 12,
   marginTop: 12
-};
-
-const input = {
-  width: "100%",
-  padding: 14,
-  borderRadius: 12,
-  border: "none",
-  marginTop: 8
 };
 
 const primary = {
@@ -184,38 +225,49 @@ const secondary = {
   color: "#93c5fd"
 };
 
-/* Coins */
+const available = {
+  textAlign: "right" as const,
+  opacity: 0.6,
+  fontSize: 12,
+  marginTop: 6
+};
+
+const rewardHub = {
+  marginTop: 28,
+  borderTop: "1px solid rgba(255,255,255,0.1)",
+  paddingTop: 16
+};
+
+const muted = {
+  opacity: 0.6,
+  fontSize: 13
+};
 
 const coinLayer = {
   position: "fixed" as const,
   inset: 0,
-  overflow: "hidden",
   zIndex: 0
 };
 
 const coin = {
   position: "absolute" as const,
   bottom: "-10px",
-  width: 6,
-  height: 6,
+  width: 5,
+  height: 5,
   borderRadius: "50%",
   opacity: 0.6,
-  animationName: "floatUp",
-  animationTimingFunction: "linear",
-  animationIterationCount: "infinite"
+  animation: "floatUp linear infinite"
 };
 
-/* Global animation */
-const styleSheet = `
-@keyframes floatUp {
-  from { transform: translateY(0); opacity: 0; }
-  10% { opacity: 0.6; }
-  to { transform: translateY(-120vh); opacity: 0; }
-}
-`;
-
+/* global animation */
 if (typeof document !== "undefined") {
   const style = document.createElement("style");
-  style.innerHTML = styleSheet;
+  style.innerHTML = `
+    @keyframes floatUp {
+      from { transform: translateY(0); opacity: 0; }
+      10% { opacity: 0.6; }
+      to { transform: translateY(-120vh); opacity: 0; }
+    }
+  `;
   document.head.appendChild(style);
 }
