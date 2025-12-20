@@ -1,11 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import EthereumProvider from "@walletconnect/ethereum-provider";
 
 /* ---------- FLOATING COINS BACKGROUND ---------- */
 
 function FloatingCoins() {
-  const coins = Array.from({ length: 70 });
+  const coins = Array.from({ length: 60 });
 
   return (
     <div className="coins">
@@ -16,7 +17,7 @@ function FloatingCoins() {
             left: `${Math.random() * 100}%`,
             animationDuration: `${8 + Math.random() * 10}s`,
             animationDelay: `${Math.random() * 5}s`,
-            background: `hsl(${Math.random() * 360}, 80%, 60%)`
+            background: `hsl(${Math.random() * 360}, 80%, 60%)`,
           }}
         />
       ))}
@@ -24,33 +25,33 @@ function FloatingCoins() {
   );
 }
 
-/* ---------- MAIN PAGE ---------- */
+/* ---------- MAIN ---------- */
 
 export default function Home() {
-  const [connected, setConnected] = useState(false);
   const [address, setAddress] = useState<string | null>(null);
-  const [apy, setApy] = useState(7.2);
+  const [connecting, setConnecting] = useState(false);
 
   async function connectWallet() {
-    if (!(window as any).ethereum) {
-      alert("No wallet detected");
-      return;
+    try {
+      setConnecting(true);
+
+      const provider = await EthereumProvider.init({
+        projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
+        chains: [8453], // Base Mainnet (UI only for now)
+        showQrModal: true,
+      });
+
+      await provider.enable();
+
+      const accounts = provider.accounts;
+      setAddress(accounts[0]);
+    } catch (err) {
+      console.error(err);
+      alert("Wallet connection cancelled");
+    } finally {
+      setConnecting(false);
     }
-
-    const accounts = await (window as any).ethereum.request({
-      method: "eth_requestAccounts"
-    });
-
-    setAddress(accounts[0]);
-    setConnected(true);
   }
-
-  useEffect(() => {
-    const i = setInterval(() => {
-      setApy(a => +(a + (Math.random() - 0.5) * 0.01).toFixed(2));
-    }, 1500);
-    return () => clearInterval(i);
-  }, []);
 
   return (
     <main className="wrapper">
@@ -62,20 +63,18 @@ export default function Home() {
         </h1>
         <p className="subtitle">Deposit USDC to earn yield</p>
 
-        {!connected && (
+        {!address ? (
           <button className="primary full" onClick={connectWallet}>
-            Connect
+            {connecting ? "Connecting..." : "Connect"}
           </button>
-        )}
-
-        {connected && (
+        ) : (
           <p className="connected">
-            Connected: {address?.slice(0, 6)}…{address?.slice(-4)}
+            Connected: {address.slice(0, 6)}…{address.slice(-4)}
           </p>
         )}
       </section>
 
-      {connected && (
+      {address && (
         <>
           <section className="card">
             <p className="label">Deposited</p>
@@ -90,28 +89,7 @@ export default function Home() {
 
           <section className="card">
             <p className="label">Current APY</p>
-            <h2>{apy}% • live</h2>
-          </section>
-
-          <section className="card">
-            <h3>Earn Your Boosts</h3>
-
-            <div className="boost locked">
-              🔒 Welcome Boost <span>+0.00%</span>
-            </div>
-            <div className="boost locked">
-              🔒 Referral Boost <span>+0.00%</span>
-            </div>
-          </section>
-
-          <section className="card">
-            <h3>Reward Hub</h3>
-            <p className="muted">
-              Stay in the loop. Get early access to yield upgrades and new features.
-            </p>
-
-            <input className="input" placeholder="Email address" />
-            <button className="primary full">Notify me</button>
+            <h2>7.20% • live</h2>
           </section>
         </>
       )}
@@ -119,7 +97,7 @@ export default function Home() {
   );
 }
 
-/* ---------- STYLES (INLINE, BUILD SAFE) ---------- */
+/* ---------- STYLES ---------- */
 
 const styles = `
 .wrapper {
@@ -177,13 +155,12 @@ const styles = `
 
 .subtitle {
   opacity: 0.7;
-  margin-bottom: 12px;
+  margin-bottom: 14px;
 }
 
 .connected {
-  margin-top: 8px;
   font-size: 13px;
-  opacity: 0.7;
+  opacity: 0.75;
 }
 
 .label {
@@ -219,24 +196,8 @@ const styles = `
   color: #9b7cff;
 }
 
-.boost {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  opacity: 0.6;
-}
-
-.input {
-  width: 100%;
-  padding: 12px;
-  border-radius: 10px;
-  border: none;
-  margin-top: 12px;
-}
-
 .full {
   width: 100%;
-  margin-top: 12px;
 }
 `;
 
