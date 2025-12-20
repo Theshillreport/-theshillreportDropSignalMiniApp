@@ -1,232 +1,235 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+
+/**
+ * MVP Vault UI (No Blockchain)
+ * - Deposit
+ * - Withdraw
+ * - Rewards starten erst nach Einzahlung
+ * - Vorbereitung für echten USDC Vault
+ */
 
 export default function Page() {
-  // --------------------
-  // Core State
-  // --------------------
-  const [deposit, setDeposit] = useState(0);
-  const [balance, setBalance] = useState(0);
-  const [apy] = useState(12); // base APY
-  const [boost, setBoost] = useState(0);
-  const [email, setEmail] = useState("");
-  const [refInput, setRefInput] = useState("");
-
-  // --------------------
-  // Referral
-  // --------------------
-  const referralCode = useMemo(
-    () => Math.random().toString(36).substring(2, 10).toUpperCase(),
-    []
+  const [balance, setBalance] = useState(0); // eingezahlt
+  const [earnings, setEarnings] = useState(0); // rewards
+  const [amount, setAmount] = useState("");
+  const [apyBoost, setApyBoost] = useState(0);
+  const [referralCode] = useState(
+    Math.random().toString(36).substring(2, 10).toUpperCase()
   );
+  const [inviteLink, setInviteLink] = useState("");
+  const [email, setEmail] = useState("");
 
-  const inviteLink = `https://your-app.vercel.app/?ref=${referralCode}`;
+  const APY = 18.4;
 
-  const applyReferral = () => {
-    if (refInput.length >= 6) {
-      setBoost(0.5);
-      alert("Referral applied! +0.5% APY boost for 30 days");
-    }
-  };
-
-  // --------------------
-  // Earnings Simulation
-  // --------------------
+  // Invite Link generieren
   useEffect(() => {
-    if (deposit <= 0) return;
+    setInviteLink(
+      `${typeof window !== "undefined" ? window.location.origin : ""}/?ref=${referralCode}`
+    );
+  }, [referralCode]);
+
+  // Earnings pro Sekunde (startet nur wenn Balance > 0)
+  useEffect(() => {
+    if (balance <= 0) return;
 
     const interval = setInterval(() => {
-      setBalance((b) => b + deposit * ((apy + boost) / 100 / 86400));
+      setEarnings(e =>
+        e + balance * (APY / 100) / 31536000
+      );
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [deposit, apy, boost]);
+  }, [balance]);
 
-  // --------------------
-  // Background Coins
-  // --------------------
-  const coins = useMemo(
-    () =>
-      Array.from({ length: 70 }).map((_, i) => ({
-        id: i,
-        left: Math.random() * 100,
-        size: Math.random() * 6 + 2,
-        delay: Math.random() * 10,
-        duration: Math.random() * 20 + 10,
-        color: ["#ff8a00", "#4fd1ff", "#3cff8f", "#ff4f4f"][
-          Math.floor(Math.random() * 4)
-        ],
-      })),
-    []
-  );
+  // -------------------------
+  // DEPOSIT (UI-SIMULATION)
+  // -------------------------
+  function deposit() {
+    const value = parseFloat(amount);
+    if (isNaN(value) || value <= 0) return;
+
+    setBalance(prev => prev + value);
+    setAmount("");
+  }
+
+  // -------------------------
+  // WITHDRAW (UI-SIMULATION)
+  // -------------------------
+  function withdraw() {
+    const value = parseFloat(amount);
+    if (isNaN(value) || value <= 0) return;
+    if (value > balance + earnings) return;
+
+    let remaining = value;
+
+    if (earnings >= remaining) {
+      setEarnings(e => e - remaining);
+    } else {
+      remaining -= earnings;
+      setEarnings(0);
+      setBalance(b => Math.max(0, b - remaining));
+    }
+
+    setAmount("");
+  }
+
+  // Referral anwenden
+  function applyReferral() {
+    setApyBoost(0.5);
+  }
 
   return (
-    <main style={styles.page}>
-      {/* Background Coins */}
-      <div style={styles.bg}>
-        {coins.map((c) => (
-          <span
-            key={c.id}
-            style={{
-              ...styles.coin,
-              left: `${c.left}%`,
-              width: c.size,
-              height: c.size,
-              background: c.color,
-              animationDelay: `${c.delay}s`,
-              animationDuration: `${c.duration}s`,
-            }}
-          />
-        ))}
-      </div>
+    <main style={container}>
+      {/* BACKGROUND COINS */}
+      <div className="coins" />
 
-      {/* UI */}
-      <div style={styles.container}>
-        <h1 style={styles.title}>REWARD HUB</h1>
+      <section style={card}>
+        <h1 style={title}>REWARD HUB</h1>
 
-        {/* Referral */}
-        <section style={styles.card}>
-          <label style={styles.label}>YOUR REFERRAL CODE</label>
-          <div style={styles.row}>
-            <span>{referralCode}</span>
-            <button onClick={() => navigator.clipboard.writeText(referralCode)}>
-              Copy
-            </button>
-          </div>
+        <div style={box}>
+          <p style={label}>YOUR BALANCE</p>
+          <h2>${balance.toFixed(2)} USDC</h2>
+          <p style={green}>+${earnings.toFixed(4)} earned</p>
+        </div>
 
-          <label style={styles.label}>YOUR INVITE LINK</label>
-          <div style={styles.row}>
-            <span style={{ fontSize: 12 }}>{inviteLink}</span>
-            <button onClick={() => navigator.clipboard.writeText(inviteLink)}>
-              Copy
-            </button>
-          </div>
+        <div style={row}>
+          <button style={primary} onClick={deposit}>
+            Deposit
+          </button>
+          <button style={secondary} onClick={withdraw}>
+            Withdraw
+          </button>
+        </div>
 
-          <p style={styles.small}>
-            Share to earn +0.5% APY boost for 30 days when friends deposit.
-          </p>
-        </section>
+        <input
+          style={input}
+          placeholder="Amount"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+          type="number"
+        />
 
-        {/* Apply Referral */}
-        <section style={styles.card}>
-          <label style={styles.label}>HAVE A REFERRAL CODE?</label>
-          <div style={styles.row}>
-            <input
-              placeholder="Enter code"
-              value={refInput}
-              onChange={(e) => setRefInput(e.target.value)}
-            />
-            <button onClick={applyReferral}>Apply</button>
-          </div>
-        </section>
+        <div style={box}>
+          <p style={label}>APY</p>
+          <h3>
+            {APY + apyBoost}%{" "}
+            {apyBoost > 0 && <span style={green}>(Boosted)</span>}
+          </h3>
+        </div>
 
-        {/* Deposit */}
-        <section style={styles.card}>
-          <label style={styles.label}>DEPOSIT (USDC)</label>
-          <div style={styles.row}>
-            <input
-              type="number"
-              placeholder="0.00"
-              onChange={(e) => setDeposit(Number(e.target.value))}
-            />
-            <button>Deposit</button>
-          </div>
+        <div style={box}>
+          <p style={label}>YOUR REFERRAL CODE</p>
+          <code>{referralCode}</code>
+        </div>
 
-          <p style={styles.small}>
-            APY: {(apy + boost).toFixed(2)}%
-          </p>
-          <p style={styles.small}>
-            Earnings: {balance.toFixed(6)} USDC
-          </p>
-        </section>
+        <div style={box}>
+          <p style={label}>YOUR INVITE LINK</p>
+          <small>{inviteLink}</small>
+        </div>
 
-        {/* Email */}
-        <section style={styles.cardBlue}>
-          <h3>Stay in the loop</h3>
-          <p>
-            Subscribe to receive vault news, yield announcements and early
-            feature previews.
-          </p>
+        <div style={box}>
+          <p style={label}>HAVE A REFERRAL CODE?</p>
+          <button style={secondary} onClick={applyReferral}>
+            Apply Referral
+          </button>
+        </div>
+
+        <div style={box}>
+          <p style={label}>STAY IN THE LOOP</p>
           <input
+            style={input}
             placeholder="your@email.com"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            onChange={e => setEmail(e.target.value)}
           />
-          <button onClick={() => alert("Subscribed!")}>Notify me</button>
-        </section>
-      </div>
+          <button style={primary}>Notify me</button>
+        </div>
+      </section>
 
-      {/* Animations */}
-      <style>{`
-        @keyframes float {
-          from { transform: translateY(110vh); }
-          to { transform: translateY(-10vh); }
+      {/* SIMPLE BACKGROUND STYLE */}
+      <style jsx>{`
+        .coins {
+          position: fixed;
+          inset: 0;
+          background: radial-gradient(circle at 20% 30%, #ff8a0033, transparent 40%),
+            radial-gradient(circle at 80% 60%, #4fd1ff33, transparent 40%);
+          z-index: -1;
         }
       `}</style>
     </main>
   );
 }
 
-// --------------------
-// Styles
-// --------------------
-const styles: any = {
-  page: {
-    minHeight: "100vh",
-    background: "#050b1e",
-    color: "#fff",
-    overflow: "hidden",
-  },
-  bg: {
-    position: "fixed",
-    inset: 0,
-    zIndex: 0,
-  },
-  coin: {
-    position: "absolute",
-    bottom: "-10vh",
-    borderRadius: "50%",
-    opacity: 0.6,
-    animationName: "float",
-    animationTimingFunction: "linear",
-    animationIterationCount: "infinite",
-  },
-  container: {
-    position: "relative",
-    zIndex: 1,
-    maxWidth: 420,
-    margin: "0 auto",
-    padding: 20,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 20,
-    letterSpacing: 2,
-  },
-  card: {
-    background: "rgba(255,255,255,0.04)",
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 16,
-  },
-  cardBlue: {
-    background: "linear-gradient(135deg,#0a1f4d,#123a8a)",
-    borderRadius: 20,
-    padding: 20,
-  },
-  label: {
-    fontSize: 12,
-    opacity: 0.7,
-  },
-  row: {
-    display: "flex",
-    gap: 8,
-    marginTop: 8,
-  },
-  small: {
-    fontSize: 12,
-    opacity: 0.6,
-    marginTop: 6,
-  },
+/* ---------------- STYLES ---------------- */
+
+const container = {
+  minHeight: "100vh",
+  background: "#020617",
+  padding: 24,
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center",
+  color: "white"
+};
+
+const card = {
+  width: "100%",
+  maxWidth: 420,
+  background: "rgba(255,255,255,0.04)",
+  borderRadius: 20,
+  padding: 24,
+  backdropFilter: "blur(12px)"
+};
+
+const title = {
+  textAlign: "center" as const,
+  marginBottom: 16,
+  letterSpacing: 2
+};
+
+const box = {
+  marginTop: 16
+};
+
+const label = {
+  opacity: 0.6,
+  fontSize: 12
+};
+
+const green = {
+  color: "#4ade80"
+};
+
+const row = {
+  display: "flex",
+  gap: 12,
+  marginTop: 16
+};
+
+const primary = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 12,
+  background: "linear-gradient(135deg,#FF8A00,#4FD1FF)",
+  border: "none",
+  fontWeight: 700
+};
+
+const secondary = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 12,
+  background: "transparent",
+  border: "1px solid #4FD1FF",
+  color: "#4FD1FF"
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  marginTop: 8,
+  border: "none"
 };
