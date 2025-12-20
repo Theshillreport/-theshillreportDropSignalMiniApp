@@ -1,196 +1,232 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 
-export default function Home() {
+export default function Page() {
+  // --------------------
+  // Core State
+  // --------------------
+  const [deposit, setDeposit] = useState(0);
   const [balance, setBalance] = useState(0);
-  const [reward, setReward] = useState(0);
-  const [amount, setAmount] = useState("");
-  const [showDeposit, setShowDeposit] = useState(false);
+  const [apy] = useState(12); // base APY
+  const [boost, setBoost] = useState(0);
+  const [email, setEmail] = useState("");
+  const [refInput, setRefInput] = useState("");
 
-  const apy = 18.4;
+  // --------------------
+  // Referral
+  // --------------------
+  const referralCode = useMemo(
+    () => Math.random().toString(36).substring(2, 10).toUpperCase(),
+    []
+  );
 
-  // Auto Yield – startet nur wenn Balance > 0
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (balance > 0) {
-        const inc = (balance * apy) / 100 / 31536000;
-        setBalance(b => b + inc);
-        setReward(r => r + inc);
-      }
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [balance]);
+  const inviteLink = `https://your-app.vercel.app/?ref=${referralCode}`;
 
-  function deposit() {
-    const v = parseFloat(amount);
-    if (!isNaN(v) && v > 0) {
-      setBalance(b => b + v);
-      setAmount("");
-      setShowDeposit(false);
+  const applyReferral = () => {
+    if (refInput.length >= 6) {
+      setBoost(0.5);
+      alert("Referral applied! +0.5% APY boost for 30 days");
     }
-  }
+  };
 
-  function claim() {
-    setBalance(b => b + reward);
-    setReward(0);
-  }
-
-  // 🔵🟠🟢🔴 Hintergrund Coins
-  const colors = ["#FF8A00", "#4FD1FF", "#22c55e", "#ef4444"];
-  const [coins, setCoins] = useState<any[]>([]);
-
+  // --------------------
+  // Earnings Simulation
+  // --------------------
   useEffect(() => {
-    setCoins(
-      Array.from({ length: 90 }).map(() => ({
-        id: Math.random(),
+    if (deposit <= 0) return;
+
+    const interval = setInterval(() => {
+      setBalance((b) => b + deposit * ((apy + boost) / 100 / 86400));
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [deposit, apy, boost]);
+
+  // --------------------
+  // Background Coins
+  // --------------------
+  const coins = useMemo(
+    () =>
+      Array.from({ length: 70 }).map((_, i) => ({
+        id: i,
         left: Math.random() * 100,
-        size: 3 + Math.random() * 5,
-        speed: 0.3 + Math.random() * 1,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        offset: Math.random() * 100
-      }))
-    );
-  }, []);
+        size: Math.random() * 6 + 2,
+        delay: Math.random() * 10,
+        duration: Math.random() * 20 + 10,
+        color: ["#ff8a00", "#4fd1ff", "#3cff8f", "#ff4f4f"][
+          Math.floor(Math.random() * 4)
+        ],
+      })),
+    []
+  );
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        padding: 24,
-        maxWidth: 420,
-        margin: "0 auto",
-        position: "relative",
-        overflow: "hidden",
-        background:
-          "radial-gradient(circle at top, #0b1a33 0%, #020617 60%)"
-      }}
-    >
-      {/* ✨ COIN BACKGROUND */}
-      {coins.map(c => (
-        <div
-          key={c.id}
-          style={{
-            position: "absolute",
-            left: `${c.left}%`,
-            width: c.size,
-            height: c.size,
-            borderRadius: "50%",
-            background: c.color,
-            top: `${(Date.now() / 60 * c.speed + c.offset) % 120}%`,
-            opacity: 0.75,
-            filter: `blur(0.3px) drop-shadow(0 0 6px ${c.color})`,
-            zIndex: 0,
-            pointerEvents: "none"
-          }}
-        />
-      ))}
+    <main style={styles.page}>
+      {/* Background Coins */}
+      <div style={styles.bg}>
+        {coins.map((c) => (
+          <span
+            key={c.id}
+            style={{
+              ...styles.coin,
+              left: `${c.left}%`,
+              width: c.size,
+              height: c.size,
+              background: c.color,
+              animationDelay: `${c.delay}s`,
+              animationDuration: `${c.duration}s`,
+            }}
+          />
+        ))}
+      </div>
 
-      {/* 🧠 UI FOREGROUND */}
-      <div style={{ position: "relative", zIndex: 1 }}>
-        <h1 style={{ fontSize: 32, color: "#fff" }}>
-          🚀 <span style={{ color: "#FF8A00" }}>Drop</span>
-          <span style={{ color: "#4FD1FF" }}>Signal</span>
-        </h1>
+      {/* UI */}
+      <div style={styles.container}>
+        <h1 style={styles.title}>REWARD HUB</h1>
 
-        <div style={card}>
-          <p style={{ opacity: 0.6 }}>Your Balance</p>
-          <h2>${balance.toFixed(2)} USDC</h2>
-          <p style={{ color: "#4FD1FF" }}>+ ${reward.toFixed(2)} today</p>
-        </div>
-
-        <button style={depositBtn} onClick={() => setShowDeposit(true)}>
-          Deposit USDC
-        </button>
-
-        {showDeposit && (
-          <div style={overlay}>
-            <input
-              type="number"
-              placeholder="Amount"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-              style={input}
-            />
-            <button style={depositBtn} onClick={deposit}>
-              Confirm
-            </button>
-            <button style={cancelBtn} onClick={() => setShowDeposit(false)}>
-              Cancel
+        {/* Referral */}
+        <section style={styles.card}>
+          <label style={styles.label}>YOUR REFERRAL CODE</label>
+          <div style={styles.row}>
+            <span>{referralCode}</span>
+            <button onClick={() => navigator.clipboard.writeText(referralCode)}>
+              Copy
             </button>
           </div>
-        )}
 
-        <div style={{ ...card, marginTop: 24 }}>
-          <p style={{ opacity: 0.6 }}>Daily Reward</p>
-          <h3>+ ${reward.toFixed(2)}</h3>
-          <button style={claimBtn} onClick={claim}>
-            Claim
-          </button>
-        </div>
+          <label style={styles.label}>YOUR INVITE LINK</label>
+          <div style={styles.row}>
+            <span style={{ fontSize: 12 }}>{inviteLink}</span>
+            <button onClick={() => navigator.clipboard.writeText(inviteLink)}>
+              Copy
+            </button>
+          </div>
+
+          <p style={styles.small}>
+            Share to earn +0.5% APY boost for 30 days when friends deposit.
+          </p>
+        </section>
+
+        {/* Apply Referral */}
+        <section style={styles.card}>
+          <label style={styles.label}>HAVE A REFERRAL CODE?</label>
+          <div style={styles.row}>
+            <input
+              placeholder="Enter code"
+              value={refInput}
+              onChange={(e) => setRefInput(e.target.value)}
+            />
+            <button onClick={applyReferral}>Apply</button>
+          </div>
+        </section>
+
+        {/* Deposit */}
+        <section style={styles.card}>
+          <label style={styles.label}>DEPOSIT (USDC)</label>
+          <div style={styles.row}>
+            <input
+              type="number"
+              placeholder="0.00"
+              onChange={(e) => setDeposit(Number(e.target.value))}
+            />
+            <button>Deposit</button>
+          </div>
+
+          <p style={styles.small}>
+            APY: {(apy + boost).toFixed(2)}%
+          </p>
+          <p style={styles.small}>
+            Earnings: {balance.toFixed(6)} USDC
+          </p>
+        </section>
+
+        {/* Email */}
+        <section style={styles.cardBlue}>
+          <h3>Stay in the loop</h3>
+          <p>
+            Subscribe to receive vault news, yield announcements and early
+            feature previews.
+          </p>
+          <input
+            placeholder="your@email.com"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+          />
+          <button onClick={() => alert("Subscribed!")}>Notify me</button>
+        </section>
       </div>
+
+      {/* Animations */}
+      <style>{`
+        @keyframes float {
+          from { transform: translateY(110vh); }
+          to { transform: translateY(-10vh); }
+        }
+      `}</style>
     </main>
   );
 }
 
-/* 🎨 STYLES */
-
-const card = {
-  background: "rgba(255,255,255,0.04)",
-  border: "1px solid rgba(79,209,255,0.25)",
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 16,
-  color: "#fff"
-};
-
-const depositBtn = {
-  marginTop: 16,
-  padding: 14,
-  width: "100%",
-  borderRadius: 12,
-  background: "linear-gradient(135deg,#FF8A00,#FFB347)",
-  color: "#000",
-  fontWeight: 700,
-  border: "none"
-};
-
-const cancelBtn = {
-  marginTop: 8,
-  padding: 14,
-  width: "100%",
-  borderRadius: 12,
-  background: "transparent",
-  color: "#4FD1FF",
-  border: "1px solid #4FD1FF"
-};
-
-const claimBtn = {
-  marginTop: 12,
-  padding: 12,
-  width: "100%",
-  borderRadius: 10,
-  background: "#4FD1FF",
-  color: "#000",
-  fontWeight: 600,
-  border: "none"
-};
-
-const overlay = {
-  position: "fixed" as const,
-  inset: 0,
-  background: "rgba(0,0,0,0.7)",
-  display: "flex",
-  flexDirection: "column" as const,
-  alignItems: "center",
-  justifyContent: "center",
-  zIndex: 10
-};
-
-const input = {
-  width: 220,
-  padding: 12,
-  borderRadius: 8,
-  border: "none",
-  marginBottom: 16
+// --------------------
+// Styles
+// --------------------
+const styles: any = {
+  page: {
+    minHeight: "100vh",
+    background: "#050b1e",
+    color: "#fff",
+    overflow: "hidden",
+  },
+  bg: {
+    position: "fixed",
+    inset: 0,
+    zIndex: 0,
+  },
+  coin: {
+    position: "absolute",
+    bottom: "-10vh",
+    borderRadius: "50%",
+    opacity: 0.6,
+    animationName: "float",
+    animationTimingFunction: "linear",
+    animationIterationCount: "infinite",
+  },
+  container: {
+    position: "relative",
+    zIndex: 1,
+    maxWidth: 420,
+    margin: "0 auto",
+    padding: 20,
+  },
+  title: {
+    textAlign: "center",
+    marginBottom: 20,
+    letterSpacing: 2,
+  },
+  card: {
+    background: "rgba(255,255,255,0.04)",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  cardBlue: {
+    background: "linear-gradient(135deg,#0a1f4d,#123a8a)",
+    borderRadius: 20,
+    padding: 20,
+  },
+  label: {
+    fontSize: 12,
+    opacity: 0.7,
+  },
+  row: {
+    display: "flex",
+    gap: 8,
+    marginTop: 8,
+  },
+  small: {
+    fontSize: 12,
+    opacity: 0.6,
+    marginTop: 6,
+  },
 };
