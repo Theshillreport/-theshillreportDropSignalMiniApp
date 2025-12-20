@@ -1,1 +1,7 @@
-
+{
+  "name": "DropSignal",
+  "description": "Deposit. Earn. Signal.",
+  "icon": "/icon.png",
+  "developer": "theshillreport",
+  "homepage": "https://DEINE-VERCEL-URL.vercel.app"
+}
