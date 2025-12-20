@@ -2,175 +2,114 @@
 
 import { useEffect, useState } from "react";
 
-/**
- * MVP Vault UI (No Blockchain)
- * - Deposit
- * - Withdraw
- * - Rewards starten erst nach Einzahlung
- * - Vorbereitung für echten USDC Vault
- */
-
 export default function Page() {
-  const [balance, setBalance] = useState(0); // eingezahlt
-  const [earnings, setEarnings] = useState(0); // rewards
+  const [deposit, setDeposit] = useState(0);
+  const [rewards, setRewards] = useState(0);
   const [amount, setAmount] = useState("");
-  const [apyBoost, setApyBoost] = useState(0);
-  const [referralCode] = useState(
-    Math.random().toString(36).substring(2, 10).toUpperCase()
-  );
-  const [inviteLink, setInviteLink] = useState("");
-  const [email, setEmail] = useState("");
 
   const APY = 18.4;
 
-  // Invite Link generieren
+  // Live Earnings pro Sekunde
   useEffect(() => {
-    setInviteLink(
-      `${typeof window !== "undefined" ? window.location.origin : ""}/?ref=${referralCode}`
-    );
-  }, [referralCode]);
-
-  // Earnings pro Sekunde (startet nur wenn Balance > 0)
-  useEffect(() => {
-    if (balance <= 0) return;
+    if (deposit <= 0) return;
 
     const interval = setInterval(() => {
-      setEarnings(e =>
-        e + balance * (APY / 100) / 31536000
-      );
+      setRewards(r => r + deposit * APY / 100 / 31536000);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [balance]);
+  }, [deposit]);
 
-  // -------------------------
-  // DEPOSIT (UI-SIMULATION)
-  // -------------------------
-  function deposit() {
-    const value = parseFloat(amount);
-    if (isNaN(value) || value <= 0) return;
-
-    setBalance(prev => prev + value);
+  function handleDeposit() {
+    const v = parseFloat(amount);
+    if (isNaN(v) || v <= 0) return;
+    setDeposit(d => d + v);
     setAmount("");
   }
 
-  // -------------------------
-  // WITHDRAW (UI-SIMULATION)
-  // -------------------------
-  function withdraw() {
-    const value = parseFloat(amount);
-    if (isNaN(value) || value <= 0) return;
-    if (value > balance + earnings) return;
+  function handleWithdraw() {
+    const v = parseFloat(amount);
+    if (isNaN(v) || v <= 0) return;
 
-    let remaining = value;
+    const total = deposit + rewards;
+    if (v > total) return;
 
-    if (earnings >= remaining) {
-      setEarnings(e => e - remaining);
+    if (rewards >= v) {
+      setRewards(r => r - v);
     } else {
-      remaining -= earnings;
-      setEarnings(0);
-      setBalance(b => Math.max(0, b - remaining));
+      const rest = v - rewards;
+      setRewards(0);
+      setDeposit(d => Math.max(0, d - rest));
     }
 
     setAmount("");
   }
 
-  // Referral anwenden
-  function applyReferral() {
-    setApyBoost(0.5);
-  }
-
   return (
     <main style={container}>
-      {/* BACKGROUND COINS */}
       <div className="coins" />
 
       <section style={card}>
-        <h1 style={title}>REWARD HUB</h1>
+        <h1 style={title}>🚀 DropSignal</h1>
+
+        <p style={subtitle}>Deposit USDC. Earn live yield.</p>
 
         <div style={box}>
-          <p style={label}>YOUR BALANCE</p>
-          <h2>${balance.toFixed(2)} USDC</h2>
-          <p style={green}>+${earnings.toFixed(4)} earned</p>
-        </div>
-
-        <div style={row}>
-          <button style={primary} onClick={deposit}>
-            Deposit
-          </button>
-          <button style={secondary} onClick={withdraw}>
-            Withdraw
-          </button>
+          <p style={label}>Deposited</p>
+          <h2>${deposit.toFixed(2)} USDC</h2>
+          <p style={green}>+ ${rewards.toFixed(4)} earned</p>
         </div>
 
         <input
           style={input}
           placeholder="Amount"
+          type="number"
           value={amount}
           onChange={e => setAmount(e.target.value)}
-          type="number"
         />
 
-        <div style={box}>
-          <p style={label}>APY</p>
-          <h3>
-            {APY + apyBoost}%{" "}
-            {apyBoost > 0 && <span style={green}>(Boosted)</span>}
-          </h3>
+        <div style={row}>
+          <button style={primary} onClick={handleDeposit}>Deposit</button>
+          <button style={secondary} onClick={handleWithdraw}>Withdraw</button>
         </div>
 
         <div style={box}>
-          <p style={label}>YOUR REFERRAL CODE</p>
-          <code>{referralCode}</code>
-        </div>
-
-        <div style={box}>
-          <p style={label}>YOUR INVITE LINK</p>
-          <small>{inviteLink}</small>
-        </div>
-
-        <div style={box}>
-          <p style={label}>HAVE A REFERRAL CODE?</p>
-          <button style={secondary} onClick={applyReferral}>
-            Apply Referral
-          </button>
-        </div>
-
-        <div style={box}>
-          <p style={label}>STAY IN THE LOOP</p>
-          <input
-            style={input}
-            placeholder="your@email.com"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-          />
-          <button style={primary}>Notify me</button>
+          <p style={label}>Current APY</p>
+          <h3>{APY}% (live)</h3>
         </div>
       </section>
 
-      {/* SIMPLE BACKGROUND STYLE */}
+      {/* FLOATING COINS BACKGROUND */}
       <style jsx>{`
         .coins {
           position: fixed;
           inset: 0;
-          background: radial-gradient(circle at 20% 30%, #ff8a0033, transparent 40%),
-            radial-gradient(circle at 80% 60%, #4fd1ff33, transparent 40%);
           z-index: -1;
+          background:
+            radial-gradient(circle at 10% 20%, #ff8a0040, transparent 35%),
+            radial-gradient(circle at 80% 30%, #4fd1ff40, transparent 35%),
+            radial-gradient(circle at 50% 80%, #22c55e40, transparent 35%),
+            #020617;
+          animation: float 12s ease-in-out infinite alternate;
+        }
+
+        @keyframes float {
+          from { background-position: 0% 0%, 100% 0%, 50% 100%; }
+          to   { background-position: 10% 10%, 90% 20%, 60% 90%; }
         }
       `}</style>
     </main>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* STYLES */
 
 const container = {
   minHeight: "100vh",
-  background: "#020617",
-  padding: 24,
   display: "flex",
   justifyContent: "center",
   alignItems: "center",
+  padding: 24,
   color: "white"
 };
 
@@ -184,9 +123,13 @@ const card = {
 };
 
 const title = {
+  fontSize: 32,
+  textAlign: "center" as const
+};
+
+const subtitle = {
   textAlign: "center" as const,
-  marginBottom: 16,
-  letterSpacing: 2
+  opacity: 0.7
 };
 
 const box = {
@@ -205,7 +148,15 @@ const green = {
 const row = {
   display: "flex",
   gap: 12,
-  marginTop: 16
+  marginTop: 12
+};
+
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  border: "none",
+  marginTop: 8
 };
 
 const primary = {
@@ -224,12 +175,4 @@ const secondary = {
   background: "transparent",
   border: "1px solid #4FD1FF",
   color: "#4FD1FF"
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  marginTop: 8,
-  border: "none"
 };
