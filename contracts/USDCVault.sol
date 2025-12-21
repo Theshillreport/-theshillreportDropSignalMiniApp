@@ -8,14 +8,11 @@ interface IERC20 {
 }
 
 contract DropSignalVault {
-    IERC20 public immutable usdc;
+    IERC20 public usdc;
     address public owner;
-
-    uint256 public constant APY = 720; // 7.20%
-    uint256 public constant FEE = 20;  // 20% performance fee
+    uint256 public performanceFee = 20; // 20%
 
     mapping(address => uint256) public deposited;
-    mapping(address => uint256) public lastUpdate;
 
     constructor(address _usdc) {
         usdc = IERC20(_usdc);
@@ -23,34 +20,23 @@ contract DropSignalVault {
     }
 
     function deposit(uint256 amount) external {
-        _accrue(msg.sender);
+        require(amount > 0, "amount = 0");
         usdc.transferFrom(msg.sender, address(this), amount);
         deposited[msg.sender] += amount;
     }
 
     function withdraw(uint256 amount) external {
-        _accrue(msg.sender);
+        require(deposited[msg.sender] >= amount, "not enough");
         deposited[msg.sender] -= amount;
         usdc.transfer(msg.sender, amount);
     }
 
-    function earned(address user) public view returns (uint256) {
-        uint256 time = block.timestamp - lastUpdate[user];
-        return (deposited[user] * APY * time) / 10000 / 365 days;
-    }
-
-    function claim() external {
-        uint256 reward = earned(msg.sender);
-        uint256 fee = (reward * FEE) / 100;
-        lastUpdate[msg.sender] = block.timestamp;
+    // simulated yield claim (MVP)
+    function claimYield(uint256 yieldAmount) external {
+        uint256 fee = (yieldAmount * performanceFee) / 100;
+        uint256 userAmount = yieldAmount - fee;
 
         usdc.transfer(owner, fee);
-        usdc.transfer(msg.sender, reward - fee);
-    }
-
-    function _accrue(address user) internal {
-        if (lastUpdate[user] == 0) {
-            lastUpdate[user] = block.timestamp;
-        }
+        usdc.transfer(msg.sender, userAmount);
     }
 }
