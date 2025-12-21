@@ -1,5 +1,6 @@
 {
-  "name": "drop-signal",
+  "name": "dropsignal",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -8,13 +9,8 @@
   },
   "dependencies": {
     "next": "14.2.35",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "@walletconnect/ethereum-provider": "^2.0.0" // Version wird automatisch durch npm gesetzt
-  },
-  "devDependencies": {
-    "typescript": "^5.0.0",
-    "@types/react": "^18.0.0",
-    "@types/node": "^20.0.0"
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@walletconnect/ethereum-provider": "^2.11.1"
   }
 }
