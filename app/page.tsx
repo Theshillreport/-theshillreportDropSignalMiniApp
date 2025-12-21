@@ -1,208 +1,197 @@
 "use client";
 
-import { useState } from "react";
-import EthereumProvider from "@walletconnect/ethereum-provider";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
 
-/* ---------- FLOATING COINS BACKGROUND ---------- */
+/* ---------------- CONFIG ---------------- */
 
-function FloatingCoins() {
-  const coins = Array.from({ length: 60 });
+const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
+const VAULT_ADDRESS = "0x1111111111111111111111111111111111111111"; // placeholder
 
-  return (
-    <div className="coins">
-      {coins.map((_, i) => (
-        <span
-          key={i}
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 10}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            background: `hsl(${Math.random() * 360}, 80%, 60%)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
+const USDC_ABI = [
+  "function approve(address spender, uint256 amount) external returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
 
-/* ---------- MAIN ---------- */
+const VAULT_ABI = [
+  "function deposit(uint256 amount) external",
+  "function withdraw(uint256 amount) external",
+  "function balanceOf(address user) view returns (uint256)"
+];
 
-export default function Home() {
-  const [address, setAddress] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
+/* ---------------- PAGE ---------------- */
+
+export default function Page() {
+  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
+  const [signer, setSigner] = useState<ethers.Signer | null>(null);
+  const [address, setAddress] = useState<string>("");
+
+  const [usdcBalance, setUsdcBalance] = useState("0.00");
+  const [vaultBalance, setVaultBalance] = useState("0.00");
+  const [amount, setAmount] = useState("");
+
+  /* ---------- WALLET ---------- */
 
   async function connectWallet() {
-    try {
-      setConnecting(true);
-
-      const provider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453], // Base Mainnet (UI only for now)
-        showQrModal: true,
-      });
-
-      await provider.enable();
-
-      const accounts = provider.accounts;
-      setAddress(accounts[0]);
-    } catch (err) {
-      console.error(err);
-      alert("Wallet connection cancelled");
-    } finally {
-      setConnecting(false);
+    if (!window.ethereum) {
+      alert("No wallet detected");
+      return;
     }
+
+    const prov = new ethers.BrowserProvider(window.ethereum);
+    const sign = await prov.getSigner();
+    const addr = await sign.getAddress();
+
+    setProvider(prov);
+    setSigner(sign);
+    setAddress(addr);
   }
 
+  /* ---------- LOAD BALANCES ---------- */
+
+  async function loadBalances() {
+    if (!signer || !address) return;
+
+    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+
+    const decimals = await usdc.decimals();
+    const bal = await usdc.balanceOf(address);
+    const vbal = await vault.balanceOf(address);
+
+    setUsdcBalance(ethers.formatUnits(bal, decimals));
+    setVaultBalance(ethers.formatUnits(vbal, decimals));
+  }
+
+  useEffect(() => {
+    loadBalances();
+  }, [signer]);
+
+  /* ---------- DEPOSIT ---------- */
+
+  async function deposit() {
+    if (!signer || !amount) return;
+
+    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+
+    const value = ethers.parseUnits(amount, 6);
+
+    const approveTx = await usdc.approve(VAULT_ADDRESS, value);
+    await approveTx.wait();
+
+    const tx = await vault.deposit(value);
+    await tx.wait();
+
+    setAmount("");
+    loadBalances();
+  }
+
+  /* ---------- WITHDRAW ---------- */
+
+  async function withdraw() {
+    if (!signer || !amount) return;
+
+    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
+    const value = ethers.parseUnits(amount, 6);
+
+    const tx = await vault.withdraw(value);
+    await tx.wait();
+
+    setAmount("");
+    loadBalances();
+  }
+
+  /* ---------------- UI ---------------- */
+
   return (
-    <main className="wrapper">
-      <FloatingCoins />
+    <main style={container}>
+      <h1 style={logo}>DropSignal</h1>
+      <p style={subtitle}>Deposit USDC to earn yield</p>
 
-      <section className="card hero">
-        <h1>
-          Drop<span>Signal</span>
-        </h1>
-        <p className="subtitle">Deposit USDC to earn yield</p>
-
-        {!address ? (
-          <button className="primary full" onClick={connectWallet}>
-            {connecting ? "Connecting..." : "Connect"}
-          </button>
-        ) : (
-          <p className="connected">
-            Connected: {address.slice(0, 6)}…{address.slice(-4)}
-          </p>
-        )}
-      </section>
-
-      {address && (
+      {!address ? (
+        <button style={primary} onClick={connectWallet}>
+          Connect Wallet
+        </button>
+      ) : (
         <>
-          <section className="card">
-            <p className="label">Deposited</p>
-            <h2>$0.00 USDC</h2>
-            <p className="positive">+ $0.0000 earned</p>
-          </section>
+          <p style={addressStyle}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </p>
 
-          <div className="actions">
-            <button className="primary">Deposit</button>
-            <button className="secondary">Withdraw</button>
+          <div style={card}>
+            <p>Your Wallet</p>
+            <h2>{usdcBalance} USDC</h2>
           </div>
 
-          <section className="card">
-            <p className="label">Current APY</p>
-            <h2>7.20% • live</h2>
-          </section>
+          <div style={card}>
+            <p>Deposited</p>
+            <h2>{vaultBalance} USDC</h2>
+          </div>
+
+          <input
+            style={input}
+            placeholder="Amount"
+            value={amount}
+            onChange={e => setAmount(e.target.value)}
+          />
+
+          <button style={primary} onClick={deposit}>
+            Deposit
+          </button>
+
+          <button style={secondary} onClick={withdraw}>
+            Withdraw
+          </button>
         </>
       )}
     </main>
   );
 }
 
-/* ---------- STYLES ---------- */
+/* ---------------- STYLES ---------------- */
 
-const styles = `
-.wrapper {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #2b0d52, #050814);
-  color: white;
-  padding: 24px;
-  max-width: 420px;
-  margin: 0 auto;
-  position: relative;
-  overflow: hidden;
-  font-family: Inter, system-ui;
-}
+const container = {
+  minHeight: "100vh",
+  background: "linear-gradient(160deg,#0b1020,#1b1450)",
+  color: "white",
+  padding: 24,
+  maxWidth: 420,
+  margin: "0 auto"
+};
 
-.coins {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
+const logo = { fontSize: 32, fontWeight: 800 };
+const subtitle = { opacity: 0.7, marginBottom: 24 };
+const addressStyle = { fontSize: 12, opacity: 0.6, marginBottom: 16 };
 
-.coins span {
-  position: absolute;
-  bottom: -10px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  opacity: 0.35;
-  animation: float linear infinite;
-}
+const card = {
+  background: "rgba(255,255,255,0.05)",
+  borderRadius: 16,
+  padding: 16,
+  marginBottom: 16
+};
 
-@keyframes float {
-  to {
-    transform: translateY(-110vh);
-  }
-}
+const input = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  marginBottom: 12
+};
 
-.card {
-  position: relative;
-  z-index: 2;
-  background: rgba(255,255,255,0.04);
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-}
+const primary = {
+  width: "100%",
+  padding: 14,
+  borderRadius: 12,
+  background: "#7c5cff",
+  color: "white",
+  fontWeight: 700,
+  border: "none",
+  marginBottom: 10
+};
 
-.hero h1 {
-  font-size: 36px;
-}
-
-.hero span {
-  color: #9b7cff;
-}
-
-.subtitle {
-  opacity: 0.7;
-  margin-bottom: 14px;
-}
-
-.connected {
-  font-size: 13px;
-  opacity: 0.75;
-}
-
-.label {
-  opacity: 0.6;
-}
-
-.positive {
-  color: #4fd1ff;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.primary {
-  flex: 1;
-  padding: 14px;
-  border-radius: 12px;
-  background: linear-gradient(135deg,#9b7cff,#4fd1ff);
-  border: none;
-  color: black;
-  font-weight: 700;
-}
-
-.secondary {
-  flex: 1;
-  padding: 14px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid #9b7cff;
-  color: #9b7cff;
-}
-
-.full {
-  width: 100%;
-}
-`;
-
-if (typeof document !== "undefined") {
-  const style = document.createElement("style");
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}
+const secondary = {
+  ...primary,
+  background: "transparent",
+  border: "1px solid #7c5cff"
+};
