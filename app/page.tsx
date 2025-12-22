@@ -163,4 +163,4 @@ const secondary = {
   ...primary,
   background: "transparent",
   border: "1px solid #7c5cff"
-};
+}; 
