@@ -90,3 +90,120 @@ export default function Home() {
     </main>
   );
 }
+const styles = `
+.wrapper {
+  min-height: 100vh;
+  background: radial-gradient(circle at top, #2b0d52, #050814);
+  color: white;
+  padding: 24px;
+  max-width: 420px;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+  font-family: Inter, system-ui;
+}
+
+.coins {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.coins span {
+  position: absolute;
+  bottom: -10px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  opacity: 0.4;
+  animation: float linear infinite;
+}
+
+@keyframes float {
+  to {
+    transform: translateY(-110vh);
+  }
+}
+
+.card {
+  position: relative;
+  z-index: 2;
+  background: rgba(255,255,255,0.04);
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 16px;
+  border: 1px solid rgba(255,255,255,0.08);
+}
+
+.hero h1 {
+  font-size: 36px;
+}
+
+.hero span {
+  color: #9b7cff;
+}
+
+.subtitle {
+  opacity: 0.7;
+}
+
+.label {
+  opacity: 0.6;
+}
+
+.positive {
+  color: #4fd1ff;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.primary {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  background: linear-gradient(135deg,#9b7cff,#4fd1ff);
+  border: none;
+  color: black;
+  font-weight: 700;
+}
+
+.secondary {
+  flex: 1;
+  padding: 14px;
+  border-radius: 12px;
+  background: transparent;
+  border: 1px solid #9b7cff;
+  color: #9b7cff;
+}
+
+.boost {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  opacity: 0.6;
+}
+
+.input {
+  width: 100%;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  margin-top: 12px;
+}
+
+.full {
+  width: 100%;
+  margin-top: 12px;
+}
+`;
+
+if (typeof document !== "undefined") {
+  const style = document.createElement("style");
+  style.innerHTML = styles;
+  document.head.appendChild(style);
+}
