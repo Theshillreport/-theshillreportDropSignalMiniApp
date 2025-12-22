@@ -8,7 +8,7 @@ export default function AppClient() {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("Install a wallet (Farcaster / MetaMask / Coinbase)");
+      alert("Please install a wallet");
       return;
     }
 
@@ -28,7 +28,7 @@ export default function AppClient() {
         <p style={styles.tagline}>Deposit USDC. Earn Yield.</p>
 
         {!account ? (
-          <button style={styles.primaryBtn} onClick={connectWallet}>
+          <button onClick={connectWallet} style={styles.primary}>
             Connect Wallet
           </button>
         ) : (
@@ -38,66 +38,70 @@ export default function AppClient() {
             </div>
 
             <div style={styles.balance}>
-              Your Balance  
-              <strong>{balance} USDC</strong>
+              Your Balance
+              <span>{balance} USDC</span>
             </div>
 
-            <button style={styles.primaryBtn}>Deposit</button>
-            <button style={styles.secondaryBtn}>Withdraw</button>
+            <div style={styles.actions}>
+              <button style={styles.secondary}>Deposit</button>
+              <button style={styles.secondary}>Withdraw</button>
+            </div>
           </>
         )}
       </div>
     </main>
   );
 }
+
 const styles = {
   container: {
     minHeight: "100vh",
+    background: "#050b1e",
     display: "flex",
-    justifyContent: "center",
     alignItems: "center",
-    background: "#020617",
-    fontFamily: "Inter, system-ui",
+    justifyContent: "center",
     position: "relative",
   },
   background: {
     position: "absolute",
     inset: 0,
     background:
-      "radial-gradient(circle at top, #38bdf8 0%, transparent 60%), radial-gradient(circle at bottom, #f97316 0%, transparent 60%)",
+      "radial-gradient(circle at top, #fb923c 0%, transparent 60%), radial-gradient(circle at bottom, #38bdf8 0%, transparent 60%)",
     opacity: 0.35,
   },
   card: {
+    position: "relative",
     zIndex: 1,
     width: 360,
-    padding: 32,
+    padding: 36,
     borderRadius: 20,
-    background: "rgba(15,23,42,.9)",
-    boxShadow: "0 0 60px rgba(56,189,248,.3)",
+    background: "rgba(10,15,40,0.85)",
     textAlign: "center",
   },
   logo: { color: "#fff", fontSize: 28, fontWeight: 700 },
-  tagline: { color: "#7dd3fc", marginBottom: 24 },
-  address: { color: "#94a3b8", marginBottom: 12 },
-  balance: { color: "#fff", marginBottom: 20 },
-  primaryBtn: {
+  tagline: { color: "#93c5fd", marginBottom: 24 },
+  primary: {
     width: "100%",
     padding: 14,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#38bdf8,#f97316)",
+    background: "linear-gradient(135deg,#fb923c,#38bdf8)",
+    border: "none",
     color: "#000",
     fontWeight: 700,
-    border: "none",
-    cursor: "pointer",
-    marginBottom: 12,
   },
-  secondaryBtn: {
-    width: "100%",
-    padding: 14,
-    borderRadius: 12,
-    background: "transparent",
-    border: "1px solid #38bdf8",
-    color: "#38bdf8",
-    cursor: "pointer",
+  address: { color: "#a5b4fc", marginBottom: 16 },
+  balance: {
+    color: "#fff",
+    fontSize: 14,
+    marginBottom: 20,
+  },
+  actions: { display: "flex", gap: 12 },
+  secondary: {
+    flex: 1,
+    padding: 12,
+    borderRadius: 10,
+    border: "1px solid #334155",
+    background: "#020617",
+    color: "#fff",
   },
 };
