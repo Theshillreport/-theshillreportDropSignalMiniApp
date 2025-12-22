@@ -7,7 +7,13 @@ export default function Page() {
   const [balance, setBalance] = useState(0);
   const [earned, setEarned] = useState(0);
   const [amount, setAmount] = useState("");
-  const apy = 18.4;
+  const [invites, setInvites] = useState(0);
+
+  const baseApy = 18.4;
+  const welcomeBoost = 0.5;
+  const referralBoost = invites >= 1 ? 1.0 : 0;
+
+  const apy = baseApy + welcomeBoost + referralBoost;
 
   /* -----------------------------
      LIVE YIELD (pro Sekunde)
@@ -20,11 +26,8 @@ export default function Page() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [connected, balance]);
+  }, [connected, balance, apy]);
 
-  /* -----------------------------
-     DEPOSIT / WITHDRAW
-  ----------------------------- */
   function deposit() {
     const v = parseFloat(amount);
     if (!isNaN(v) && v > 0) {
@@ -35,10 +38,17 @@ export default function Page() {
 
   function withdraw() {
     const v = parseFloat(amount);
-    if (!isNaN(v) && v > 0 && v <= balance) {
+    if (!isNaN(v) && v <= balance) {
       setBalance(b => b - v);
       setAmount("");
     }
+  }
+
+  function copyInvite() {
+    navigator.clipboard.writeText(
+      "https://farcaster.xyz/miniapps/dropsignal?ref=you"
+    );
+    alert("Invite link copied");
   }
 
   return (
@@ -81,7 +91,43 @@ export default function Page() {
 
           <div style={apyBox}>
             <span>Current APY</span>
-            <strong>{apy}% • live</strong>
+            <strong>{apy.toFixed(2)}%</strong>
+          </div>
+
+          {/* BOOSTS */}
+          <div style={boostBox}>
+            <h4 style={{ marginBottom: 8 }}>Earn your boosts</h4>
+
+            <Boost
+              label="Welcome Boost"
+              value="+0.50%"
+              unlocked
+            />
+
+            <Boost
+              label="Referral Boost"
+              value="+1.00%"
+              unlocked={invites >= 1}
+            />
+          </div>
+
+          {/* INVITE */}
+          <div style={inviteBox}>
+            <p style={{ opacity: 0.7 }}>
+              Invite friends to unlock boosts
+            </p>
+
+            <button style={inviteBtn} onClick={copyInvite}>
+              Copy Invite Link
+            </button>
+
+            {/* Demo Button to simulate invite */}
+            <button
+              style={simulateBtn}
+              onClick={() => setInvites(1)}
+            >
+              Simulate 1 Invite
+            </button>
           </div>
         </div>
       )}
@@ -90,22 +136,44 @@ export default function Page() {
 }
 
 /* ======================================================
-   FLOATING COINS (HINTERGRUND)
+   SMALL COMPONENTS
+   ====================================================== */
+
+function Boost({
+  label,
+  value,
+  unlocked,
+}: {
+  label: string;
+  value: string;
+  unlocked: boolean;
+}) {
+  return (
+    <div style={boostRow}>
+      <span>
+        {unlocked ? "🔓" : "🔒"} {label}
+      </span>
+      <strong style={{ opacity: unlocked ? 1 : 0.4 }}>
+        {value}
+      </strong>
+    </div>
+  );
+}
+
+/* ======================================================
+   FLOATING COINS
    ====================================================== */
 
 function FloatingCoins() {
-  const coins = Array.from({ length: 60 });
-
   return (
     <div style={coinLayer}>
-      {coins.map((_, i) => (
+      {Array.from({ length: 60 }).map((_, i) => (
         <span
           key={i}
           style={{
             ...coin,
             left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 12}s`,
-            animationDelay: `${Math.random() * 5}s`,
+            animationDuration: `${10 + Math.random() * 10}s`,
             background: colors[i % colors.length],
           }}
         />
@@ -139,16 +207,8 @@ const card = {
   zIndex: 2,
 };
 
-const logo = {
-  fontSize: 22,
-  fontWeight: 800,
-  letterSpacing: 0.5,
-};
-
-const subtitle = {
-  marginTop: 6,
-  opacity: 0.7,
-};
+const logo = { fontSize: 22, fontWeight: 800 };
+const subtitle = { marginTop: 6, opacity: 0.7 };
 
 const connectBtn = {
   marginTop: 22,
@@ -170,23 +230,15 @@ const stat = {
   justifyContent: "space-between",
 };
 
-const actions = {
-  marginTop: 16,
-  display: "grid",
-  gap: 8,
-};
+const actions = { marginTop: 16, display: "grid", gap: 8 };
 
-const input = {
-  padding: 12,
-  borderRadius: 12,
-  border: "none",
-};
+const input = { padding: 12, borderRadius: 12, border: "none" };
 
 const depositBtn = {
   padding: 12,
   borderRadius: 14,
-  border: "none",
   background: "#22c55e",
+  border: "none",
   fontWeight: 700,
 };
 
@@ -207,6 +259,46 @@ const apyBox = {
   justifyContent: "space-between",
 };
 
+const boostBox = {
+  marginTop: 18,
+  padding: 14,
+  borderRadius: 16,
+  background: "rgba(0,0,0,0.35)",
+};
+
+const boostRow = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginTop: 6,
+};
+
+const inviteBox = {
+  marginTop: 18,
+  padding: 14,
+  borderRadius: 16,
+  background: "rgba(0,0,0,0.35)",
+};
+
+const inviteBtn = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 14,
+  background: "#8b5cf6",
+  border: "none",
+  fontWeight: 700,
+  marginTop: 8,
+};
+
+const simulateBtn = {
+  width: "100%",
+  padding: 10,
+  borderRadius: 12,
+  background: "transparent",
+  border: "1px dashed #64748b",
+  color: "#94a3b8",
+  marginTop: 8,
+};
+
 /* ---------- Coins ---------- */
 
 const coinLayer = {
@@ -222,9 +314,7 @@ const coin = {
   height: 6,
   borderRadius: "50%",
   opacity: 0.6,
-  animationName: "float",
-  animationTimingFunction: "linear",
-  animationIterationCount: "infinite",
+  animation: "float linear infinite",
 };
 
 const colors = ["#fb7185", "#38bdf8", "#34d399", "#fbbf24"];
