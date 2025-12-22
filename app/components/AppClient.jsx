@@ -50,3 +50,54 @@ export default function AppClient() {
     </main>
   );
 }
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    background: "#020617",
+    fontFamily: "Inter, system-ui",
+    position: "relative",
+  },
+  background: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at top, #38bdf8 0%, transparent 60%), radial-gradient(circle at bottom, #f97316 0%, transparent 60%)",
+    opacity: 0.35,
+  },
+  card: {
+    zIndex: 1,
+    width: 360,
+    padding: 32,
+    borderRadius: 20,
+    background: "rgba(15,23,42,.9)",
+    boxShadow: "0 0 60px rgba(56,189,248,.3)",
+    textAlign: "center",
+  },
+  logo: { color: "#fff", fontSize: 28, fontWeight: 700 },
+  tagline: { color: "#7dd3fc", marginBottom: 24 },
+  address: { color: "#94a3b8", marginBottom: 12 },
+  balance: { color: "#fff", marginBottom: 20 },
+  primaryBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    background: "linear-gradient(135deg,#38bdf8,#f97316)",
+    color: "#000",
+    fontWeight: 700,
+    border: "none",
+    cursor: "pointer",
+    marginBottom: 12,
+  },
+  secondaryBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    background: "transparent",
+    border: "1px solid #38bdf8",
+    color: "#38bdf8",
+    cursor: "pointer",
+  },
+};
