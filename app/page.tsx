@@ -1,182 +1,130 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-
-/* ---------------- CONFIG ---------------- */
-
-const USDC_ADDRESS = "0x036CbD53842c5426634e7929541eC2318f3dCF7e"; // Base Sepolia USDC
-const VAULT_ADDRESS = "0x1111111111111111111111111111111111111111"; // placeholder
-
-const USDC_ABI = [
-  "function approve(address spender, uint256 amount) external returns (bool)",
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)"
-];
-
-const VAULT_ABI = [
-  "function deposit(uint256 amount) external",
-  "function withdraw(uint256 amount) external",
-  "function balanceOf(address user) view returns (uint256)"
-];
-
-/* ---------------- PAGE ---------------- */
 
 export default function Page() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState<string>("");
-
-  const [usdcBalance, setUsdcBalance] = useState("0.00");
-  const [vaultBalance, setVaultBalance] = useState("0.00");
+  const [balance, setBalance] = useState(0);
+  const [deposited, setDeposited] = useState(0);
+  const [earned, setEarned] = useState(0);
   const [amount, setAmount] = useState("");
+  const apy = 18.4;
 
-  /* ---------- WALLET ---------- */
-
-  async function connectWallet() {
-    if (!window.ethereum) {
-      alert("No wallet detected");
-      return;
-    }
-
-    const prov = new ethers.BrowserProvider(window.ethereum);
-    const sign = await prov.getSigner();
-    const addr = await sign.getAddress();
-
-    setProvider(prov);
-    setSigner(sign);
-    setAddress(addr);
-  }
-
-  /* ---------- LOAD BALANCES ---------- */
-
-  async function loadBalances() {
-    if (!signer || !address) return;
-
-    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
-    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
-
-    const decimals = await usdc.decimals();
-    const bal = await usdc.balanceOf(address);
-    const vbal = await vault.balanceOf(address);
-
-    setUsdcBalance(ethers.formatUnits(bal, decimals));
-    setVaultBalance(ethers.formatUnits(vbal, decimals));
-  }
-
+  /* AUTO YIELD – pro Sekunde */
   useEffect(() => {
-    loadBalances();
-  }, [signer]);
+    const interval = setInterval(() => {
+      setBalance(b => {
+        if (b <= 0) return b;
+        const perSecond = apy / 100 / 31536000;
+        const gain = b * perSecond;
+        setEarned(e => e + gain);
+        return b + gain;
+      });
+    }, 1000);
 
-  /* ---------- DEPOSIT ---------- */
+    return () => clearInterval(interval);
+  }, []);
 
-  async function deposit() {
-    if (!signer || !amount) return;
-
-    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
-    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
-
-    const value = ethers.parseUnits(amount, 6);
-
-    const approveTx = await usdc.approve(VAULT_ADDRESS, value);
-    await approveTx.wait();
-
-    const tx = await vault.deposit(value);
-    await tx.wait();
-
+  function deposit() {
+    const v = parseFloat(amount);
+    if (!v || v <= 0) return;
+    setBalance(b => b + v);
+    setDeposited(d => d + v);
     setAmount("");
-    loadBalances();
   }
 
-  /* ---------- WITHDRAW ---------- */
-
-  async function withdraw() {
-    if (!signer || !amount) return;
-
-    const vault = new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer);
-    const value = ethers.parseUnits(amount, 6);
-
-    const tx = await vault.withdraw(value);
-    await tx.wait();
-
+  function withdraw() {
+    const v = parseFloat(amount);
+    if (!v || v <= 0 || v > balance) return;
+    setBalance(b => b - v);
     setAmount("");
-    loadBalances();
   }
-
-  /* ---------------- UI ---------------- */
 
   return (
     <main style={container}>
-      <h1 style={logo}>DropSignal</h1>
-      <p style={subtitle}>Deposit USDC to earn yield</p>
+      {/* BACKGROUND COINS */}
+      {[...Array(60)].map((_, i) => (
+        <div
+          key={i}
+          className="coin"
+          style={{
+            width: 4 + Math.random() * 6,
+            height: 4 + Math.random() * 6,
+            left: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 10}s`,
+            background: COLORS[Math.floor(Math.random() * COLORS.length)]
+          }}
+        />
+      ))}
 
-      {!address ? (
-        <button style={primary} onClick={connectWallet}>
-          Connect Wallet
-        </button>
-      ) : (
-        <>
-          <p style={addressStyle}>
-            {address.slice(0, 6)}...{address.slice(-4)}
+      {/* UI */}
+      <div style={card}>
+        <h1 style={logo}>DropSignal</h1>
+        <p style={{ opacity: 0.7 }}>Deposit. Earn. Signal.</p>
+
+        <div style={box}>
+          <p>Deposited</p>
+          <h2>${deposited.toFixed(2)} USDC</h2>
+          <p style={{ color: "#4FD1FF" }}>
+            + ${earned.toFixed(4)} earned
           </p>
+        </div>
 
-          <div style={card}>
-            <p>Your Wallet</p>
-            <h2>{usdcBalance} USDC</h2>
-          </div>
+        <div style={box}>
+          <p>Current APY</p>
+          <h2 style={{ color: "#a78bfa" }}>{apy}% • live</h2>
+        </div>
 
-          <div style={card}>
-            <p>Deposited</p>
-            <h2>{vaultBalance} USDC</h2>
-          </div>
+        <input
+          style={input}
+          placeholder="Amount"
+          value={amount}
+          onChange={e => setAmount(e.target.value)}
+        />
 
-          <input
-            style={input}
-            placeholder="Amount"
-            value={amount}
-            onChange={e => setAmount(e.target.value)}
-          />
-
-          <button style={primary} onClick={deposit}>
-            Deposit
-          </button>
-
-          <button style={secondary} onClick={withdraw}>
-            Withdraw
-          </button>
-        </>
-      )}
+        <button style={primary} onClick={deposit}>
+          Deposit
+        </button>
+        <button style={secondary} onClick={withdraw}>
+          Withdraw
+        </button>
+      </div>
     </main>
   );
 }
 
-/* ---------------- STYLES ---------------- */
+/* -------- STYLES -------- */
+
+const COLORS = ["#f97316", "#38bdf8", "#22c55e", "#a78bfa", "#ef4444"];
 
 const container = {
   minHeight: "100vh",
-  background: "linear-gradient(160deg,#0b1020,#1b1450)",
-  color: "white",
-  padding: 24,
-  maxWidth: 420,
-  margin: "0 auto"
+  position: "relative" as const,
+  background: "radial-gradient(circle at top,#1e1b4b,#020617)",
+  overflow: "hidden"
 };
 
-const logo = { fontSize: 32, fontWeight: 800 };
-const subtitle = { opacity: 0.7, marginBottom: 24 };
-const addressStyle = { fontSize: 12, opacity: 0.6, marginBottom: 16 };
-
 const card = {
-  background: "rgba(255,255,255,0.05)",
+  position: "relative" as const,
+  zIndex: 2,
+  maxWidth: 420,
+  margin: "0 auto",
+  padding: 24
+};
+
+const logo = { fontSize: 34, fontWeight: 800 };
+
+const box = {
+  background: "rgba(255,255,255,0.06)",
   borderRadius: 16,
   padding: 16,
-  marginBottom: 16
+  marginTop: 16
 };
 
 const input = {
   width: "100%",
   padding: 12,
   borderRadius: 10,
-  marginBottom: 12
+  marginTop: 16
 };
 
 const primary = {
@@ -185,9 +133,9 @@ const primary = {
   borderRadius: 12,
   background: "#7c5cff",
   color: "white",
-  fontWeight: 700,
   border: "none",
-  marginBottom: 10
+  marginTop: 12,
+  fontWeight: 700
 };
 
 const secondary = {
