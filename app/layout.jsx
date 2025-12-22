@@ -1,18 +1,9 @@
-import "./globals.css";
-
-export const metadata = {
-  title: "DropSignal",
-  description: "Deposit. Earn. Signal."
-};
-
-export default function RootLayout({
-  children
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body style={{ margin: 0, background: "#0b1020", color: "white" }}>
+        {children}
+      </body>
     </html>
   );
 }
