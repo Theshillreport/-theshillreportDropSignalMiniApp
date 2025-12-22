@@ -5,48 +5,46 @@ import { BrowserProvider } from "ethers";
 
 export default function Page() {
   const [address, setAddress] = useState<string | null>(null);
-  const [balance, setBalance] = useState(0);
-  const apy = 7.2;
+  const [error, setError] = useState("");
 
   async function connectWallet() {
-    if (typeof window === "undefined") return;
+    try {
+      if (!(window as any).ethereum) {
+        setError("No wallet detected");
+        return;
+      }
 
-    if (!(window as any).ethereum) {
-      alert("No wallet detected");
-      return;
+      const provider = new BrowserProvider((window as any).ethereum);
+      const accounts = await provider.send("eth_requestAccounts", []);
+      setAddress(accounts[0]);
+    } catch (e) {
+      setError("Wallet connection failed");
     }
-
-    const provider = new BrowserProvider((window as any).ethereum);
-    const accounts = await provider.send("eth_requestAccounts", []);
-    setAddress(accounts[0]);
   }
 
   return (
     <main style={container}>
       <div style={card}>
         <h1 style={logo}>DropSignal</h1>
-        <p style={tagline}>Deposit USDC to earn yield</p>
+        <p style={tagline}>Deposit. Earn. Signal.</p>
 
         {!address ? (
-          <button style={connect} onClick={connectWallet}>
-            Connect Wallet
-          </button>
+          <>
+            <button style={connect} onClick={connectWallet}>
+              Connect
+            </button>
+            {error && <p style={errorStyle}>{error}</p>}
+          </>
         ) : (
           <>
             <p style={addressStyle}>
-              Connected: {address.slice(0, 6)}...{address.slice(-4)}
+              Connected: {address.slice(0, 6)}…{address.slice(-4)}
             </p>
 
-            <div style={stats}>
-              <div>
-                <p style={label}>YOUR BALANCE</p>
-                <h2>${balance.toFixed(2)}</h2>
-              </div>
-
-              <div>
-                <p style={label}>APY</p>
-                <h2>{apy}%</h2>
-              </div>
+            <div style={statBox}>
+              <p>Deposited</p>
+              <h2>$0.00 USDC</h2>
+              <p style={{ color: "#4fd1ff" }}>+ $0.0000 earned</p>
             </div>
 
             <div style={actions}>
@@ -54,10 +52,8 @@ export default function Page() {
               <button style={withdraw}>Withdraw</button>
             </div>
 
-            <div style={rewardHub}>
-              <h3>Reward Hub</h3>
-              <p>Referral Boost: 🔒</p>
-              <p>Welcome Boost: 🔒</p>
+            <div style={apyBox}>
+              <strong>18.4% APY • live</strong>
             </div>
           </>
         )}
@@ -72,7 +68,8 @@ const container = {
   minHeight: "100vh",
   display: "flex",
   justifyContent: "center",
-  alignItems: "center"
+  alignItems: "center",
+  background: "radial-gradient(circle at top, #3b2a7a, #0b1020)"
 };
 
 const card = {
@@ -81,7 +78,8 @@ const card = {
   borderRadius: 20,
   background: "rgba(255,255,255,0.06)",
   backdropFilter: "blur(20px)",
-  border: "1px solid rgba(255,255,255,0.15)"
+  border: "1px solid rgba(255,255,255,0.15)",
+  color: "white"
 };
 
 const logo = {
@@ -106,22 +104,20 @@ const connect = {
   cursor: "pointer"
 };
 
+const errorStyle = {
+  color: "#ff6b6b",
+  marginTop: 12,
+  textAlign: "center" as const
+};
+
 const addressStyle = {
-  fontSize: 12,
+  fontSize: 14,
   opacity: 0.7,
-  textAlign: "center" as const,
   marginBottom: 16
 };
 
-const stats = {
-  display: "flex",
-  justifyContent: "space-between",
-  marginBottom: 16
-};
-
-const label = {
-  fontSize: 12,
-  opacity: 0.6
+const statBox = {
+  marginBottom: 20
 };
 
 const actions = {
@@ -148,8 +144,7 @@ const withdraw = {
   color: "#4fd1ff"
 };
 
-const rewardHub = {
-  marginTop: 16,
-  paddingTop: 12,
-  borderTop: "1px solid rgba(255,255,255,0.1)"
+const apyBox = {
+  textAlign: "center" as const,
+  opacity: 0.8
 };
