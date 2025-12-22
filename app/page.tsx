@@ -1,166 +1,197 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import EthereumProvider from "@walletconnect/ethereum-provider";
-import { ethers } from "ethers";
 
 export default function Page() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState("");
-
-  const [balance, setBalance] = useState(0);
-  const [earned, setEarned] = useState(0);
-  const [amount, setAmount] = useState("");
-  const apy = 18.4;
-
-  /* -------- WALLET CONNECT -------- */
-
-  async function connectWallet() {
-    const wcProvider = await EthereumProvider.init({
-      projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
-      chains: [84532], // Base Sepolia
-      showQrModal: true
-    });
-
-    await wcProvider.enable();
-
-    const ethersProvider = new ethers.BrowserProvider(wcProvider as any);
-    const signer = await ethersProvider.getSigner();
-    const addr = await signer.getAddress();
-
-    setProvider(ethersProvider);
-    setSigner(signer);
-    setAddress(addr);
-  }
-
-  /* -------- AUTO YIELD -------- */
+  const [connected, setConnected] = useState(false);
+  const [username, setUsername] = useState<string | null>(null);
+  const [fid, setFid] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!address) return;
+    // Farcaster Mini App Context (wenn in Farcaster geöffnet)
+    if ((window as any).frameContext) {
+      const ctx = (window as any).frameContext;
+      setUsername(ctx.user?.username ?? null);
+      setFid(ctx.user?.fid ?? null);
+      setConnected(true);
+    }
+  }, []);
 
-    const interval = setInterval(() => {
-      setBalance(b => {
-        if (b <= 0) return b;
-        const perSecond = apy / 100 / 31536000;
-        const gain = b * perSecond;
-        setEarned(e => e + gain);
-        return b + gain;
-      });
-    }, 1000);
+  // -----------------------------
+  // CONNECT SCREEN
+  // -----------------------------
+  if (!connected) {
+    return (
+      <main style={container}>
+        <div style={background} />
 
-    return () => clearInterval(interval);
-  }, [address]);
+        <section style={card}>
+          <div style={logo}>◉))) DropSignal</div>
+          <p style={subtitle}>Deposit. Earn. Signal.</p>
 
-  function deposit() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0) return;
-    setBalance(b => b + v);
-    setAmount("");
+          <button
+            style={farcasterButton}
+            onClick={() => {
+              // Farcaster öffnet automatisch Auth
+              (window as any).openFarcasterAuth?.();
+            }}
+          >
+            Connect with Farcaster
+          </button>
+        </section>
+      </main>
+    );
   }
 
-  function withdraw() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0 || v > balance) return;
-    setBalance(b => b - v);
-    setAmount("");
-  }
-
-  /* -------- UI -------- */
-
+  // -----------------------------
+  // MAIN APP
+  // -----------------------------
   return (
     <main style={container}>
-      <div style={card}>
-        <h1 style={logo}>DropSignal</h1>
-        <p style={{ opacity: 0.7 }}>Deposit. Earn. Signal.</p>
+      <div style={background} />
 
-        {!address ? (
-          <button style={primary} onClick={connectWallet}>
-            Connect Wallet
-          </button>
-        ) : (
-          <>
-            <p style={addressStyle}>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
+      <section style={card}>
+        <div style={logo}>◉))) DropSignal</div>
 
-            <div style={box}>
-              <p>Balance</p>
-              <h2>${balance.toFixed(4)} USDC</h2>
-              <p style={{ color: "#4FD1FF" }}>
-                + ${earned.toFixed(4)} earned
-              </p>
-            </div>
+        <p style={{ marginTop: 8, opacity: 0.8 }}>
+          Welcome <b>@{username}</b>
+        </p>
 
-            <div style={box}>
-              <p>APY</p>
-              <h2>{apy}% • live</h2>
-            </div>
+        <div style={statBox}>
+          <span>Deposited</span>
+          <strong>$0.00 USDC</strong>
+        </div>
 
-            <input
-              style={input}
-              placeholder="Amount"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-            />
+        <div style={statBox}>
+          <span>Earned</span>
+          <strong>+ $0.0000</strong>
+        </div>
 
-            <button style={primary} onClick={deposit}>
-              Deposit
-            </button>
-            <button style={secondary} onClick={withdraw}>
-              Withdraw
-            </button>
-          </>
-        )}
-      </div>
+        <div style={actions}>
+          <button style={depositBtn}>Deposit</button>
+          <button style={withdrawBtn}>Withdraw</button>
+        </div>
+
+        <div style={apyBox}>
+          <span>Current APY</span>
+          <strong>18.4% • live</strong>
+        </div>
+
+        <div style={inviteBox}>
+          <p style={{ opacity: 0.6 }}>Your invite link</p>
+          <code style={code}>
+            https://farcaster.xyz/miniapps/dropsignal?ref={fid}
+          </code>
+        </div>
+      </section>
     </main>
   );
 }
 
-/* -------- STYLES -------- */
+/* ======================================================
+   STYLES (GANZ UNTEN – WICHTIG)
+   ====================================================== */
 
 const container = {
+  position: "relative" as const,
   minHeight: "100vh",
-  background: "radial-gradient(circle at top,#1e1b4b,#020617)",
-  padding: 24
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "center",
+  overflow: "hidden",
+};
+
+const background = {
+  position: "absolute" as const,
+  inset: 0,
+  background:
+    "radial-gradient(circle at top, #1e1b4b 0%, #020617 70%)",
+  zIndex: -1,
 };
 
 const card = {
-  maxWidth: 420,
-  margin: "0 auto",
-  color: "white"
-};
-
-const logo = { fontSize: 34, fontWeight: 800 };
-const addressStyle = { fontSize: 12, opacity: 0.6 };
-
-const box = {
+  width: 360,
+  padding: 20,
+  borderRadius: 20,
   background: "rgba(255,255,255,0.06)",
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 16
+  backdropFilter: "blur(14px)",
+  border: "1px solid rgba(255,255,255,0.08)",
+  boxShadow: "0 0 60px rgba(139,92,246,0.15)",
 };
 
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  marginTop: 16
+const logo = {
+  fontSize: 22,
+  fontWeight: 800,
+  letterSpacing: 0.5,
 };
 
-const primary = {
+const subtitle = {
+  marginTop: 6,
+  opacity: 0.7,
+};
+
+const farcasterButton = {
   width: "100%",
+  marginTop: 20,
   padding: 14,
-  borderRadius: 12,
-  background: "#7c5cff",
-  color: "white",
+  borderRadius: 16,
   border: "none",
-  marginTop: 12,
-  fontWeight: 700
+  fontWeight: 700,
+  fontSize: 15,
+  background: "#8b5cf6",
+  color: "white",
 };
 
-const secondary = {
-  ...primary,
+const statBox = {
+  marginTop: 14,
+  padding: 12,
+  borderRadius: 14,
+  background: "rgba(0,0,0,0.3)",
+  display: "flex",
+  justifyContent: "space-between",
+};
+
+const actions = {
+  display: "flex",
+  gap: 10,
+  marginTop: 16,
+};
+
+const depositBtn = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 14,
+  background: "#22c55e",
+  border: "none",
+  fontWeight: 700,
+};
+
+const withdrawBtn = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 14,
   background: "transparent",
-  border: "1px solid #7c5cff"
+  border: "1px solid #8b5cf6",
+  color: "#c4b5fd",
+};
+
+const apyBox = {
+  marginTop: 16,
+  padding: 12,
+  borderRadius: 14,
+  background: "rgba(139,92,246,0.15)",
+  display: "flex",
+  justifyContent: "space-between",
+};
+
+const inviteBox = {
+  marginTop: 18,
+  padding: 12,
+  borderRadius: 14,
+  background: "rgba(0,0,0,0.35)",
+};
+
+const code = {
+  fontSize: 12,
+  wordBreak: "break-all" as const,
 };
