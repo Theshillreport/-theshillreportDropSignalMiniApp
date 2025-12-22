@@ -1,21 +1,11 @@
-html, body {
-  margin: 0;
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
   padding: 0;
-  background: #0b1020;
-  color: white;
-  font-family: Inter, system-ui, sans-serif;
-  overflow-x: hidden;
-}
-
-/* Floating coins */
-.coin {
-  position: absolute;
-  border-radius: 50%;
-  opacity: 0.5;
-  animation: float 12s linear infinite;
-}
-
-@keyframes float {
-  0% { transform: translateY(100vh); }
-  100% { transform: translateY(-120vh); }
+  margin: 0;
+  background: transparent;
+  color: inherit;
 }
