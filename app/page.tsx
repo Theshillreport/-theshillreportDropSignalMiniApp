@@ -1,208 +1,106 @@
 "use client";
 
-import { useState } from "react";
-import EthereumProvider from "@walletconnect/ethereum-provider";
+import { useEffect, useState } from "react";
+import { BrowserProvider, formatUnits } from "ethers";
 
-/* ---------- FLOATING COINS BACKGROUND ---------- */
-
-function FloatingCoins() {
-  const coins = Array.from({ length: 60 });
-
-  return (
-    <div className="coins">
-      {coins.map((_, i) => (
-        <span
-          key={i}
-          style={{
-            left: `${Math.random() * 100}%`,
-            animationDuration: `${8 + Math.random() * 10}s`,
-            animationDelay: `${Math.random() * 5}s`,
-            background: `hsl(${Math.random() * 360}, 80%, 60%)`,
-          }}
-        />
-      ))}
-    </div>
-  );
-}
-
-/* ---------- MAIN ---------- */
-
-export default function Home() {
+export default function Page() {
+  const [provider, setProvider] = useState<BrowserProvider | null>(null);
   const [address, setAddress] = useState<string | null>(null);
-  const [connecting, setConnecting] = useState(false);
+  const [balance, setBalance] = useState<string>("0");
 
-  async function connectWallet() {
+  // ✅ Connect Wallet (ALLE Wallets)
+  const connectWallet = async () => {
+    if (!window.ethereum) {
+      alert("No wallet detected. Please install a wallet.");
+      return;
+    }
+
     try {
-      setConnecting(true);
+      const prov = new BrowserProvider(window.ethereum);
+      const signer = await prov.getSigner();
+      const addr = await signer.getAddress();
 
-      const provider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453], // Base Mainnet (UI only for now)
-        showQrModal: true,
-      });
+      setProvider(prov);
+      setAddress(addr);
 
-      await provider.enable();
-
-      const accounts = provider.accounts;
-      setAddress(accounts[0]);
+      const bal = await prov.getBalance(addr);
+      setBalance(Number(formatUnits(bal, 18)).toFixed(4));
     } catch (err) {
       console.error(err);
-      alert("Wallet connection cancelled");
-    } finally {
-      setConnecting(false);
     }
-  }
+  };
 
   return (
-    <main className="wrapper">
-      <FloatingCoins />
-
-      <section className="card hero">
-        <h1>
-          Drop<span>Signal</span>
-        </h1>
-        <p className="subtitle">Deposit USDC to earn yield</p>
+    <main
+      style={{
+        minHeight: "100vh",
+        background:
+          "radial-gradient(circle at top, #3b1d5a, #0b1020)",
+        display: "flex",
+        justifyContent: "center",
+        alignItems: "center",
+        color: "white",
+        fontFamily: "Inter, sans-serif",
+      }}
+    >
+      <div
+        style={{
+          width: 360,
+          padding: 24,
+          borderRadius: 16,
+          background: "rgba(255,255,255,0.06)",
+          backdropFilter: "blur(12px)",
+          textAlign: "center",
+        }}
+      >
+        <h1 style={{ fontSize: 28, marginBottom: 8 }}>DropSignal</h1>
+        <p style={{ opacity: 0.7, marginBottom: 24 }}>
+          Deposit. Earn. Signal.
+        </p>
 
         {!address ? (
-          <button className="primary full" onClick={connectWallet}>
-            {connecting ? "Connecting..." : "Connect"}
+          <button
+            onClick={connectWallet}
+            style={buttonStyle}
+          >
+            Connect Wallet
           </button>
         ) : (
-          <p className="connected">
-            Connected: {address.slice(0, 6)}…{address.slice(-4)}
-          </p>
+          <>
+            <div style={{ fontSize: 12, opacity: 0.7 }}>
+              Connected
+            </div>
+            <div
+              style={{
+                fontSize: 14,
+                marginBottom: 16,
+                wordBreak: "break-all",
+              }}
+            >
+              {address}
+            </div>
+
+            <div style={{ marginBottom: 12 }}>
+              ETH Balance
+            </div>
+            <div style={{ fontSize: 22 }}>
+              {balance}
+            </div>
+          </>
         )}
-      </section>
-
-      {address && (
-        <>
-          <section className="card">
-            <p className="label">Deposited</p>
-            <h2>$0.00 USDC</h2>
-            <p className="positive">+ $0.0000 earned</p>
-          </section>
-
-          <div className="actions">
-            <button className="primary">Deposit</button>
-            <button className="secondary">Withdraw</button>
-          </div>
-
-          <section className="card">
-            <p className="label">Current APY</p>
-            <h2>7.20% • live</h2>
-          </section>
-        </>
-      )}
+      </div>
     </main>
   );
 }
 
-/* ---------- STYLES ---------- */
-
-const styles = `
-.wrapper {
-  min-height: 100vh;
-  background: radial-gradient(circle at top, #2b0d52, #050814);
-  color: white;
-  padding: 24px;
-  max-width: 420px;
-  margin: 0 auto;
-  position: relative;
-  overflow: hidden;
-  font-family: Inter, system-ui;
-}
-
-.coins {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.coins span {
-  position: absolute;
-  bottom: -10px;
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  opacity: 0.35;
-  animation: float linear infinite;
-}
-
-@keyframes float {
-  to {
-    transform: translateY(-110vh);
-  }
-}
-
-.card {
-  position: relative;
-  z-index: 2;
-  background: rgba(255,255,255,0.04);
-  border-radius: 16px;
-  padding: 16px;
-  margin-top: 16px;
-  border: 1px solid rgba(255,255,255,0.08);
-}
-
-.hero h1 {
-  font-size: 36px;
-}
-
-.hero span {
-  color: #9b7cff;
-}
-
-.subtitle {
-  opacity: 0.7;
-  margin-bottom: 14px;
-}
-
-.connected {
-  font-size: 13px;
-  opacity: 0.75;
-}
-
-.label {
-  opacity: 0.6;
-}
-
-.positive {
-  color: #4fd1ff;
-}
-
-.actions {
-  display: flex;
-  gap: 12px;
-  margin-top: 16px;
-}
-
-.primary {
-  flex: 1;
-  padding: 14px;
-  border-radius: 12px;
-  background: linear-gradient(135deg,#9b7cff,#4fd1ff);
-  border: none;
-  color: black;
-  font-weight: 700;
-}
-
-.secondary {
-  flex: 1;
-  padding: 14px;
-  border-radius: 12px;
-  background: transparent;
-  border: 1px solid #9b7cff;
-  color: #9b7cff;
-}
-
-.full {
-  width: 100%;
-}
-`;
-
-if (typeof document !== "undefined") {
-  const style = document.createElement("style");
-  style.innerHTML = styles;
-  document.head.appendChild(style);
-}
+const buttonStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "14px 0",
+  borderRadius: 12,
+  border: "none",
+  background:
+    "linear-gradient(135deg, #7c5cff, #4fd1ff)",
+  color: "#000",
+  fontWeight: 700,
+  cursor: "pointer",
+};
