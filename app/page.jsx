@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const VAULT_ADDRESS = "0xYOUR_WALLET_ADDRESS_HERE";
+const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
 
 const USDC_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
