@@ -1,115 +1,64 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import EthereumProvider from "@walletconnect/ethereum-provider";
-import { ethers } from "ethers";
+import { BrowserProvider } from "ethers";
 
 export default function Page() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState("");
-
+  const [address, setAddress] = useState<string | null>(null);
   const [balance, setBalance] = useState(0);
-  const [earned, setEarned] = useState(0);
-  const [amount, setAmount] = useState("");
-  const apy = 18.4;
-
-  /* -------- WALLET CONNECT -------- */
+  const apy = 7.2;
 
   async function connectWallet() {
-    const wcProvider = await EthereumProvider.init({
-      projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
-      chains: [84532], // Base Sepolia
-      showQrModal: true
-    });
+    if (typeof window === "undefined") return;
 
-    await wcProvider.enable();
+    if (!(window as any).ethereum) {
+      alert("No wallet detected");
+      return;
+    }
 
-    const ethersProvider = new ethers.BrowserProvider(wcProvider as any);
-    const signer = await ethersProvider.getSigner();
-    const addr = await signer.getAddress();
-
-    setProvider(ethersProvider);
-    setSigner(signer);
-    setAddress(addr);
+    const provider = new BrowserProvider((window as any).ethereum);
+    const accounts = await provider.send("eth_requestAccounts", []);
+    setAddress(accounts[0]);
   }
-
-  /* -------- AUTO YIELD -------- */
-
-  useEffect(() => {
-    if (!address) return;
-
-    const interval = setInterval(() => {
-      setBalance(b => {
-        if (b <= 0) return b;
-        const perSecond = apy / 100 / 31536000;
-        const gain = b * perSecond;
-        setEarned(e => e + gain);
-        return b + gain;
-      });
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [address]);
-
-  function deposit() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0) return;
-    setBalance(b => b + v);
-    setAmount("");
-  }
-
-  function withdraw() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0 || v > balance) return;
-    setBalance(b => b - v);
-    setAmount("");
-  }
-
-  /* -------- UI -------- */
 
   return (
     <main style={container}>
       <div style={card}>
         <h1 style={logo}>DropSignal</h1>
-        <p style={{ opacity: 0.7 }}>Deposit. Earn. Signal.</p>
+        <p style={tagline}>Deposit USDC to earn yield</p>
 
         {!address ? (
-          <button style={primary} onClick={connectWallet}>
+          <button style={connect} onClick={connectWallet}>
             Connect Wallet
           </button>
         ) : (
           <>
             <p style={addressStyle}>
-              {address.slice(0, 6)}...{address.slice(-4)}
+              Connected: {address.slice(0, 6)}...{address.slice(-4)}
             </p>
 
-            <div style={box}>
-              <p>Balance</p>
-              <h2>${balance.toFixed(4)} USDC</h2>
-              <p style={{ color: "#4FD1FF" }}>
-                + ${earned.toFixed(4)} earned
-              </p>
+            <div style={stats}>
+              <div>
+                <p style={label}>YOUR BALANCE</p>
+                <h2>${balance.toFixed(2)}</h2>
+              </div>
+
+              <div>
+                <p style={label}>APY</p>
+                <h2>{apy}%</h2>
+              </div>
             </div>
 
-            <div style={box}>
-              <p>APY</p>
-              <h2>{apy}% • live</h2>
+            <div style={actions}>
+              <button style={deposit}>Deposit</button>
+              <button style={withdraw}>Withdraw</button>
             </div>
 
-            <input
-              style={input}
-              placeholder="Amount"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-            />
-
-            <button style={primary} onClick={deposit}>
-              Deposit
-            </button>
-            <button style={secondary} onClick={withdraw}>
-              Withdraw
-            </button>
+            <div style={rewardHub}>
+              <h3>Reward Hub</h3>
+              <p>Referral Boost: 🔒</p>
+              <p>Welcome Boost: 🔒</p>
+            </div>
           </>
         )}
       </div>
@@ -117,50 +66,90 @@ export default function Page() {
   );
 }
 
-/* -------- STYLES -------- */
+/* ================= STYLES ================= */
 
 const container = {
   minHeight: "100vh",
-  background: "radial-gradient(circle at top,#1e1b4b,#020617)",
-  padding: 24
+  display: "flex",
+  justifyContent: "center",
+  alignItems: "center"
 };
 
 const card = {
-  maxWidth: 420,
-  margin: "0 auto",
-  color: "white"
-};
-
-const logo = { fontSize: 34, fontWeight: 800 };
-const addressStyle = { fontSize: 12, opacity: 0.6 };
-
-const box = {
+  width: 360,
+  padding: 24,
+  borderRadius: 20,
   background: "rgba(255,255,255,0.06)",
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 16
+  backdropFilter: "blur(20px)",
+  border: "1px solid rgba(255,255,255,0.15)"
 };
 
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  marginTop: 16
+const logo = {
+  fontSize: 32,
+  fontWeight: 800,
+  textAlign: "center" as const
 };
 
-const primary = {
+const tagline = {
+  textAlign: "center" as const,
+  opacity: 0.7,
+  marginBottom: 24
+};
+
+const connect = {
   width: "100%",
   padding: 14,
   borderRadius: 12,
-  background: "#7c5cff",
-  color: "white",
+  background: "linear-gradient(135deg,#7c5cff,#4fd1ff)",
   border: "none",
-  marginTop: 12,
-  fontWeight: 700
+  fontWeight: 700,
+  cursor: "pointer"
 };
 
-const secondary = {
-  ...primary,
+const addressStyle = {
+  fontSize: 12,
+  opacity: 0.7,
+  textAlign: "center" as const,
+  marginBottom: 16
+};
+
+const stats = {
+  display: "flex",
+  justifyContent: "space-between",
+  marginBottom: 16
+};
+
+const label = {
+  fontSize: 12,
+  opacity: 0.6
+};
+
+const actions = {
+  display: "flex",
+  gap: 12,
+  marginBottom: 16
+};
+
+const deposit = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 10,
+  background: "#4fd1ff",
+  border: "none",
+  fontWeight: 600
+};
+
+const withdraw = {
+  flex: 1,
+  padding: 12,
+  borderRadius: 10,
   background: "transparent",
-  border: "1px solid #7c5cff"
-}; 
+  border: "1px solid #4fd1ff",
+  color: "#4fd1ff"
+};
+
+const rewardHub = {
+  marginTop: 16,
+  paddingTop: 12,
+  borderTop: "1px solid rgba(255,255,255,0.1)"
+};
