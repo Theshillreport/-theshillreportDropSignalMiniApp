@@ -1,63 +1,95 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const VAULT_ADDRESS = "0xYOUR_WALLET_ADDRESS_HERE";
+
+const USDC_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function transfer(address to, uint256 amount) returns (bool)"
+];
 
 export default function Page() {
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState(null);
+  const [balance, setBalance] = useState("0");
+  const [amount, setAmount] = useState("");
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
-
     if (!window.ethereum) {
-      alert("Please install a wallet (Farcaster, MetaMask, Coinbase).");
+      alert("Install a wallet.");
       return;
     }
 
-    try {
-      const accounts = await window.ethereum.request({
-        method: "eth_requestAccounts",
-      });
+    const accounts = await window.ethereum.request({
+      method: "eth_requestAccounts",
+    });
 
-      setAccount(accounts[0]);
-    } catch (err) {
-      console.error(err);
-    }
+    setAccount(accounts[0]);
+    loadBalance(accounts[0]);
+  };
+
+  const loadBalance = async (addr) => {
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
+    const bal = await usdc.balanceOf(addr);
+    setBalance(ethers.formatUnits(bal, 6));
+  };
+
+  const depositUSDC = async () => {
+    if (!amount) return;
+
+    const provider = new ethers.BrowserProvider(window.ethereum);
+    const signer = await provider.getSigner();
+    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
+
+    const tx = await usdc.transfer(
+      VAULT_ADDRESS,
+      ethers.parseUnits(amount, 6)
+    );
+
+    await tx.wait();
+    setAmount("");
+    loadBalance(account);
   };
 
   if (!mounted) return null;
 
   return (
     <main style={styles.container}>
-      {/* Background */}
-      <div style={styles.background} />
-
-      {/* Card */}
       <div style={styles.card}>
         <h1 style={styles.logo}>DropSignal</h1>
-        <p style={styles.tagline}>Deposit. Earn. Signal.</p>
 
         {!account ? (
-          <button onClick={connectWallet} style={styles.connectBtn}>
+          <button onClick={connectWallet} style={styles.btn}>
             Connect
           </button>
         ) : (
           <>
-            <div style={styles.connected}>
-              Connected
-            </div>
-
-            <div style={styles.address}>
+            <div style={styles.addr}>
               {account.slice(0, 6)}...{account.slice(-4)}
             </div>
 
-            <div style={styles.ready}>
-              Wallet connected. App unlocked.
+            <div style={styles.balance}>
+              USDC Balance: {balance}
             </div>
+
+            <input
+              style={styles.input}
+              placeholder="Amount USDC"
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+            />
+
+            <button onClick={depositUSDC} style={styles.btn}>
+              Deposit USDC
+            </button>
           </>
         )}
       </div>
@@ -71,63 +103,42 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    position: "relative",
-    overflow: "hidden",
     background: "#050B1E",
-    fontFamily: "Inter, system-ui, sans-serif",
-  },
-  background: {
-    position: "absolute",
-    inset: 0,
-    background:
-      "radial-gradient(circle at top, #4f46e5 0%, transparent 60%), radial-gradient(circle at bottom, #9333ea 0%, transparent 60%)",
-    opacity: 0.35,
-    zIndex: 0,
   },
   card: {
-    zIndex: 1,
-    background: "rgba(10, 15, 40, 0.85)",
+    background: "rgba(20,25,60,0.9)",
+    padding: 32,
     borderRadius: 20,
-    padding: "40px 36px",
     width: 360,
     textAlign: "center",
-    boxShadow: "0 0 60px rgba(120, 90, 255, 0.25)",
   },
   logo: {
-    fontSize: 28,
-    fontWeight: 700,
     color: "#fff",
-    marginBottom: 6,
+    marginBottom: 20,
   },
-  tagline: {
+  addr: {
     color: "#a5b4fc",
-    fontSize: 14,
-    marginBottom: 30,
+    marginBottom: 10,
   },
-  connectBtn: {
+  balance: {
+    color: "#22c55e",
+    marginBottom: 12,
+  },
+  input: {
     width: "100%",
-    padding: "14px 0",
+    padding: 12,
+    marginBottom: 12,
+    borderRadius: 10,
+    border: "none",
+  },
+  btn: {
+    width: "100%",
+    padding: 14,
     borderRadius: 12,
+    background: "linear-gradient(135deg,#6366f1,#9333ea)",
+    color: "#fff",
+    fontWeight: 600,
     border: "none",
     cursor: "pointer",
-    fontSize: 16,
-    fontWeight: 600,
-    color: "#fff",
-    background:
-      "linear-gradient(135deg, #6366f1, #9333ea)",
-  },
-  connected: {
-    color: "#22c55e",
-    fontWeight: 600,
-    marginBottom: 8,
-  },
-  address: {
-    color: "#c7d2fe",
-    fontSize: 14,
-    marginBottom: 16,
-  },
-  ready: {
-    color: "#94a3b8",
-    fontSize: 13,
   },
 };
