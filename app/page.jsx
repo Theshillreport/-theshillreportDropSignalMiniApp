@@ -1,24 +1,12 @@
 "use client";
 
 export const dynamic = "force-dynamic";
-export const revalidate = 0;
 
 import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-
-const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
-
-const USDC_ABI = [
-  "function balanceOf(address owner) view returns (uint256)",
-  "function transfer(address to, uint256 amount) returns (bool)"
-];
 
 export default function Page() {
   const [mounted, setMounted] = useState(false);
   const [account, setAccount] = useState(null);
-  const [balance, setBalance] = useState("0");
-  const [amount, setAmount] = useState("");
 
   useEffect(() => {
     setMounted(true);
@@ -26,7 +14,7 @@ export default function Page() {
 
   const connectWallet = async () => {
     if (!window.ethereum) {
-      alert("Install a wallet.");
+      alert("Please install a wallet");
       return;
     }
 
@@ -35,31 +23,6 @@ export default function Page() {
     });
 
     setAccount(accounts[0]);
-    loadBalance(accounts[0]);
-  };
-
-  const loadBalance = async (addr) => {
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, provider);
-    const bal = await usdc.balanceOf(addr);
-    setBalance(ethers.formatUnits(bal, 6));
-  };
-
-  const depositUSDC = async () => {
-    if (!amount) return;
-
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    const signer = await provider.getSigner();
-    const usdc = new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer);
-
-    const tx = await usdc.transfer(
-      VAULT_ADDRESS,
-      ethers.parseUnits(amount, 6)
-    );
-
-    await tx.wait();
-    setAmount("");
-    loadBalance(account);
   };
 
   if (!mounted) return null;
@@ -70,28 +33,23 @@ export default function Page() {
         <h1 style={styles.logo}>DropSignal</h1>
 
         {!account ? (
-          <button onClick={connectWallet} style={styles.btn}>
-            Connect
+          <button style={styles.button} onClick={connectWallet}>
+            Connect Wallet
           </button>
         ) : (
           <>
-            <div style={styles.addr}>
+            <p style={styles.text}>
+              Connected:
+              <br />
               {account.slice(0, 6)}...{account.slice(-4)}
-            </div>
+            </p>
 
-            <div style={styles.balance}>
-              USDC Balance: {balance}
-            </div>
+            <button style={styles.secondary}>
+              Deposit (soon)
+            </button>
 
-            <input
-              style={styles.input}
-              placeholder="Amount USDC"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-            />
-
-            <button onClick={depositUSDC} style={styles.btn}>
-              Deposit USDC
+            <button style={styles.secondary}>
+              Withdraw (soon)
             </button>
           </>
         )}
@@ -103,45 +61,45 @@ export default function Page() {
 const styles = {
   container: {
     minHeight: "100vh",
+    background: "radial-gradient(circle, #ff9f1c, #1e3a8a)",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#050B1E",
   },
   card: {
-    background: "rgba(20,25,60,0.9)",
+    background: "#0b1025",
     padding: 32,
     borderRadius: 20,
-    width: 360,
+    width: 340,
     textAlign: "center",
+    color: "#fff",
   },
   logo: {
-    color: "#fff",
+    fontSize: 26,
     marginBottom: 20,
   },
-  addr: {
-    color: "#a5b4fc",
-    marginBottom: 10,
+  text: {
+    fontSize: 14,
+    marginBottom: 16,
   },
-  balance: {
-    color: "#22c55e",
-    marginBottom: 12,
-  },
-  input: {
-    width: "100%",
-    padding: 12,
-    marginBottom: 12,
-    borderRadius: 10,
-    border: "none",
-  },
-  btn: {
+  button: {
     width: "100%",
     padding: 14,
     borderRadius: 12,
-    background: "linear-gradient(135deg,#6366f1,#9333ea)",
-    color: "#fff",
-    fontWeight: 600,
     border: "none",
+    background: "linear-gradient(135deg, #ff9f1c, #38bdf8)",
+    color: "#000",
+    fontWeight: 700,
+    cursor: "pointer",
+  },
+  secondary: {
+    width: "100%",
+    padding: 12,
+    marginTop: 10,
+    borderRadius: 10,
+    border: "1px solid #334155",
+    background: "transparent",
+    color: "#fff",
     cursor: "pointer",
   },
 };
