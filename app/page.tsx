@@ -36,7 +36,7 @@ export default function Home() {
       setConnecting(true);
 
       const provider = await EthereumProvider.init({
-        projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [8453], // Base Mainnet (UI only for now)
         showQrModal: true,
       });
