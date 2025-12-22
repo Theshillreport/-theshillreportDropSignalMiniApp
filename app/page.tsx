@@ -27,7 +27,23 @@ function FloatingCoins() {
 /* ---------- MAIN PAGE ---------- */
 
 export default function Home() {
+  const [connected, setConnected] = useState(false);
+  const [address, setAddress] = useState<string | null>(null);
   const [apy, setApy] = useState(7.2);
+
+  async function connectWallet() {
+    if (!(window as any).ethereum) {
+      alert("No wallet detected");
+      return;
+    }
+
+    const accounts = await (window as any).ethereum.request({
+      method: "eth_requestAccounts"
+    });
+
+    setAddress(accounts[0]);
+    setConnected(true);
+  }
 
   useEffect(() => {
     const i = setInterval(() => {
@@ -45,51 +61,66 @@ export default function Home() {
           Drop<span>Signal</span>
         </h1>
         <p className="subtitle">Deposit USDC to earn yield</p>
+
+        {!connected && (
+          <button className="primary full" onClick={connectWallet}>
+            Connect
+          </button>
+        )}
+
+        {connected && (
+          <p className="connected">
+            Connected: {address?.slice(0, 6)}…{address?.slice(-4)}
+          </p>
+        )}
       </section>
 
-      <section className="card">
-        <p className="label">Deposited</p>
-        <h2>$0.00 USDC</h2>
-        <p className="positive">+ $0.0000 earned</p>
-      </section>
+      {connected && (
+        <>
+          <section className="card">
+            <p className="label">Deposited</p>
+            <h2>$0.00 USDC</h2>
+            <p className="positive">+ $0.0000 earned</p>
+          </section>
 
-      <div className="actions">
-        <button className="primary">Deposit</button>
-        <button className="secondary">Withdraw</button>
-      </div>
+          <div className="actions">
+            <button className="primary">Deposit</button>
+            <button className="secondary">Withdraw</button>
+          </div>
 
-      <section className="card">
-        <p className="label">Current APY</p>
-        <h2>{apy}% • live</h2>
-      </section>
+          <section className="card">
+            <p className="label">Current APY</p>
+            <h2>{apy}% • live</h2>
+          </section>
 
-      <section className="card">
-        <h3>Earn Your Boosts</h3>
+          <section className="card">
+            <h3>Earn Your Boosts</h3>
 
-        <div className="boost locked">
-          🔒 Welcome Boost <span>+0.00%</span>
-        </div>
-        <div className="boost locked">
-          🔒 Referral Boost <span>+0.00%</span>
-        </div>
-      </section>
+            <div className="boost locked">
+              🔒 Welcome Boost <span>+0.00%</span>
+            </div>
+            <div className="boost locked">
+              🔒 Referral Boost <span>+0.00%</span>
+            </div>
+          </section>
 
-      <section className="card">
-        <h3>Reward Hub</h3>
-        <p className="muted">
-          Stay in the loop. Get early access to yield upgrades and new features.
-        </p>
+          <section className="card">
+            <h3>Reward Hub</h3>
+            <p className="muted">
+              Stay in the loop. Get early access to yield upgrades and new features.
+            </p>
 
-        <input
-          className="input"
-          placeholder="Email address"
-          disabled
-        />
-        <button className="primary full">Notify me</button>
-      </section>
+            <input className="input" placeholder="Email address" />
+            <button className="primary full">Notify me</button>
+          </section>
+        </>
+      )}
     </main>
   );
 }
+
+/* ---------- STYLES (INLINE, BUILD SAFE) ---------- */
+
 const styles = `
 .wrapper {
   min-height: 100vh;
@@ -116,7 +147,7 @@ const styles = `
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  opacity: 0.4;
+  opacity: 0.35;
   animation: float linear infinite;
 }
 
@@ -145,6 +176,13 @@ const styles = `
 }
 
 .subtitle {
+  opacity: 0.7;
+  margin-bottom: 12px;
+}
+
+.connected {
+  margin-top: 8px;
+  font-size: 13px;
   opacity: 0.7;
 }
 
