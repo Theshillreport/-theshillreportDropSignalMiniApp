@@ -13,7 +13,7 @@ export async function GET() {
     <!-- BUTTON: öffnet Browser IN Farcaster -->
     <meta name="fc:frame:button:1" content="Open App" />
     <meta name="fc:frame:button:1:action" content="link" />
-    <meta name="fc:frame:button:1:target" content="https://theshillreport-drop-signal-mini-app.vercel.app/app" />
+    <meta name="fc:frame:button:1:target" content="https://theshillreport-drop-signal-mini-app.vercel.app/" />
   </head>
   <body></body>
 </html>`,
