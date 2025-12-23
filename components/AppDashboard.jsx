@@ -1,27 +1,82 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
 
-const APY = 8.5;
+const VAULT_ADDRESS = "DEINE_WALLET_ADRESSE_HIER"; // ⚠️ ersetzen
 
 export default function AppDashboard({ address }) {
+  const [provider, setProvider] = useState(null);
+  const [usdc, setUsdc] = useState(null);
   const [balance, setBalance] = useState(0);
-  const [depositOpen, setDepositOpen] = useState(false);
   const [amount, setAmount] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleDeposit = () => {
-    if (!amount) return;
-    setBalance((b) => b + Number(amount));
-    setAmount("");
-    setDepositOpen(false);
+  // Init
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const init = async () => {
+      const p = new ethers.BrowserProvider(window.ethereum);
+      const signer = await p.getSigner();
+      const contract = new ethers.Contract(
+        USDC_ADDRESS,
+        USDC_ABI,
+        signer
+      );
+      setProvider(p);
+      setUsdc(contract);
+    };
+
+    init();
+  }, []);
+
+  // Load Balance
+  const loadBalance = async () => {
+    if (!usdc || !address) return;
+    const raw = await usdc.balanceOf(address);
+    setBalance(Number(ethers.formatUnits(raw, 6)));
+  };
+
+  useEffect(() => {
+    loadBalance();
+  }, [usdc, address]);
+
+  // Deposit
+  const deposit = async () => {
+    if (!usdc || !amount) return;
+
+    try {
+      setLoading(true);
+
+      // 1️⃣ Approve
+      const approveTx = await usdc.approve(
+        VAULT_ADDRESS,
+        ethers.parseUnits(amount, 6)
+      );
+      await approveTx.wait();
+
+      // 2️⃣ Transfer
+      const transferTx = await usdc.transfer(
+        VAULT_ADDRESS,
+        ethers.parseUnits(amount, 6)
+      );
+      await transferTx.wait();
+
+      await loadBalance();
+      setAmount("");
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <main style={styles.container}>
-      {/* Background */}
       <div style={styles.bg} />
 
-      {/* Card */}
       <div style={styles.card}>
         <h1 style={styles.title}>DropSignal Vault</h1>
 
@@ -29,57 +84,32 @@ export default function AppDashboard({ address }) {
           {address.slice(0, 6)}...{address.slice(-4)}
         </p>
 
-        {/* Balance */}
         <div style={styles.balanceBox}>
-          <span style={styles.label}>Your Balance</span>
-          <div style={styles.balance}>{balance.toFixed(2)} USDC</div>
-          <span style={styles.apy}>APY {APY}%</span>
+          <span>Your Balance</span>
+          <strong>{balance.toFixed(2)} USDC</strong>
         </div>
 
-        {/* Actions */}
         <div style={styles.actions}>
+          <input
+            placeholder="Amount USDC"
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            style={styles.input}
+          />
+
           <button
-            style={styles.primary}
-            onClick={() => setDepositOpen(true)}
+            onClick={deposit}
+            disabled={loading}
+            style={styles.button}
           >
-            Deposit
+            {loading ? "Processing..." : "Deposit"}
           </button>
-
-          <button style={styles.secondary}>Withdraw</button>
         </div>
 
-        {/* Status */}
-        <div style={styles.status}>
-          🟢 Vault active · Yield accruing
-        </div>
+        <p style={styles.note}>
+          Base • USDC • Non-custodial
+        </p>
       </div>
-
-      {/* Deposit Modal */}
-      {depositOpen && (
-        <div style={styles.modalOverlay}>
-          <div style={styles.modal}>
-            <h3>Deposit USDC</h3>
-
-            <input
-              placeholder="Amount"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={styles.input}
-            />
-
-            <button style={styles.primary} onClick={handleDeposit}>
-              Confirm Deposit
-            </button>
-
-            <button
-              style={styles.close}
-              onClick={() => setDepositOpen(false)}
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
@@ -87,110 +117,67 @@ export default function AppDashboard({ address }) {
 const styles = {
   container: {
     minHeight: "100vh",
-    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    fontFamily: "Inter, system-ui"
+    position: "relative",
+    background: "#050b1e",
+    color: "white"
   },
   bg: {
     position: "absolute",
     inset: 0,
     background:
-      "radial-gradient(circle at top, #ff8a00, transparent 60%), radial-gradient(circle at bottom, #00d4ff, transparent 60%)",
+      "radial-gradient(circle at top left, #ff8a00 0%, transparent 55%), radial-gradient(circle at bottom right, #00d4ff 0%, transparent 55%)",
     opacity: 0.35
   },
   card: {
     zIndex: 1,
     width: 360,
-    background: "rgba(10,15,30,0.85)",
-    borderRadius: 20,
     padding: 32,
-    color: "white",
-    boxShadow: "0 0 60px rgba(255,138,0,0.25)"
+    borderRadius: 24,
+    background: "rgba(10,15,40,0.85)",
+    boxShadow: "0 0 80px rgba(255,140,0,0.25)",
+    textAlign: "center"
   },
   title: {
-    fontSize: 26,
-    marginBottom: 6
+    fontSize: 28,
+    marginBottom: 8
   },
   address: {
-    fontSize: 13,
-    opacity: 0.6,
-    marginBottom: 24
+    opacity: 0.7,
+    fontSize: 14
   },
   balanceBox: {
-    textAlign: "center",
-    marginBottom: 24
-  },
-  label: {
-    fontSize: 13,
-    opacity: 0.6
-  },
-  balance: {
-    fontSize: 34,
-    fontWeight: 700,
-    margin: "6px 0"
-  },
-  apy: {
-    fontSize: 13,
-    color: "#7dd3fc"
+    marginTop: 32,
+    padding: 20,
+    borderRadius: 16,
+    background: "rgba(255,255,255,0.06)",
+    fontSize: 18
   },
   actions: {
+    marginTop: 28,
     display: "flex",
     gap: 12
   },
-  primary: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 12,
-    border: "none",
-    background: "linear-gradient(135deg,#ff8a00,#00d4ff)",
-    color: "white",
-    fontWeight: 600,
-    cursor: "pointer"
-  },
-  secondary: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 12,
-    background: "transparent",
-    border: "1px solid rgba(255,255,255,0.2)",
-    color: "white",
-    cursor: "pointer"
-  },
-  status: {
-    marginTop: 24,
-    fontSize: 13,
-    opacity: 0.7,
-    textAlign: "center"
-  },
-  modalOverlay: {
-    position: "fixed",
-    inset: 0,
-    background: "rgba(0,0,0,0.6)",
-    display: "flex",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-  modal: {
-    background: "#0b1020",
-    padding: 24,
-    borderRadius: 16,
-    width: 300,
-    color: "white"
-  },
   input: {
-    width: "100%",
+    flex: 1,
     padding: 12,
     borderRadius: 10,
-    border: "none",
-    margin: "16px 0"
+    border: "none"
   },
-  close: {
-    marginTop: 10,
-    background: "none",
+  button: {
+    padding: "12px 20px",
+    borderRadius: 12,
     border: "none",
-    color: "#94a3b8",
-    cursor: "pointer"
+    cursor: "pointer",
+    background: "linear-gradient(135deg,#ff8a00,#00d4ff)",
+    color: "white",
+    fontWeight: 600
+  },
+  note: {
+    marginTop: 24,
+    opacity: 0.5,
+    fontSize: 12
   }
 };
