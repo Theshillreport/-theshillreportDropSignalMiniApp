@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
-import AppDashboard from "@/components/AppDashboard"; // ⬅️ NEU (1)
+import AppDashboard from "../components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
