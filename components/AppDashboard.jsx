@@ -1,69 +1,84 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
+
+const VAULT_ADDRESS = "0xYOUR_VAULT_ADDRESS"; // später ersetzen
+const APY = 0.085;
 
 export default function AppDashboard({ address }) {
+  const [provider, setProvider] = useState(null);
+  const [usdc, setUsdc] = useState(null);
   const [balance, setBalance] = useState(0);
   const [amount, setAmount] = useState("");
-  const APY = 8.5;
 
-  const deposit = () => {
-    if (!amount || Number(amount) <= 0) return;
-    setBalance((prev) => prev + Number(amount));
-    setAmount("");
+  useEffect(() => {
+    if (!window.ethereum) return;
+
+    const init = async () => {
+      const p = new ethers.BrowserProvider(window.ethereum);
+      const signer = await p.getSigner();
+
+      setProvider(p);
+      setUsdc(new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer));
+    };
+
+    init();
+  }, []);
+
+  const loadBalance = async () => {
+    if (!usdc) return;
+    const raw = await usdc.balanceOf(address);
+    setBalance(Number(ethers.formatUnits(raw, 6)));
   };
 
-  const withdraw = () => {
-    if (!amount || Number(amount) <= 0) return;
-    setBalance((prev) => Math.max(prev - Number(amount), 0));
+  useEffect(() => {
+    loadBalance();
+  }, [usdc]);
+
+  const deposit = async () => {
+    if (!amount || !usdc) return;
+
+    const parsed = ethers.parseUnits(amount, 6);
+
+    const approveTx = await usdc.approve(VAULT_ADDRESS, parsed);
+    await approveTx.wait();
+
+    const tx = await usdc.transfer(VAULT_ADDRESS, parsed);
+    await tx.wait();
+
     setAmount("");
+    loadBalance();
   };
 
   return (
     <main style={styles.container}>
-      {/* Background */}
-      <div style={styles.background} />
+      <div style={styles.bg} />
 
-      {/* Dashboard Card */}
       <div style={styles.card}>
-        <h1 style={styles.title}>DropSignal Vault</h1>
+        <h1>DropSignal Vault</h1>
 
-        <p style={styles.address}>
-          Connected: {address.slice(0, 6)}...{address.slice(-4)}
+        <p style={{ opacity: 0.6 }}>
+          {address.slice(0, 6)}...{address.slice(-4)}
         </p>
 
-        {/* Balance */}
-        <div style={styles.balanceBox}>
-          <p style={styles.label}>Your Balance</p>
-          <h2 style={styles.balance}>
-            {balance.toFixed(2)} <span style={{ fontSize: 18 }}>USDC</span>
-          </h2>
-          <p style={styles.apy}>APY: {APY}%</p>
+        <div style={styles.balance}>
+          <span>Your Balance</span>
+          <strong>{balance.toFixed(2)} USDC</strong>
+          <small>APY {APY * 100}%</small>
         </div>
 
-        {/* Input */}
         <input
-          placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
+          placeholder="USDC amount"
           style={styles.input}
         />
 
-        {/* Actions */}
-        <div style={styles.actions}>
-          <button onClick={deposit} style={styles.deposit}>
-            Deposit
-          </button>
-          <button onClick={withdraw} style={styles.withdraw}>
-            Withdraw
-          </button>
-        </div>
-
-        {/* Status */}
-        <div style={styles.status}>
-          <p>🟢 Vault Active</p>
-          <p>🔄 Yield Accruing</p>
-        </div>
+        <button onClick={deposit} style={styles.button}>
+          Deposit USDC
+        </button>
       </div>
     </main>
   );
@@ -72,57 +87,30 @@ export default function AppDashboard({ address }) {
 const styles = {
   container: {
     minHeight: "100vh",
-    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    background: "#060b18",
-    overflow: "hidden",
-    fontFamily: "Inter, system-ui, sans-serif",
+    background: "#050b1e",
+    color: "white",
+    position: "relative",
   },
-  background: {
+  bg: {
     position: "absolute",
     inset: 0,
     background:
-      "radial-gradient(circle at top left, #ff8a00 0%, transparent 55%), radial-gradient(circle at bottom right, #38bdf8 0%, transparent 55%)",
+      "radial-gradient(circle at top left,#ff9f1c 0%,transparent 55%),radial-gradient(circle at bottom right,#38bdf8 0%,transparent 55%)",
     opacity: 0.45,
   },
   card: {
-    position: "relative",
     zIndex: 1,
-    width: 380,
-    padding: "36px 32px",
-    borderRadius: 22,
-    background: "rgba(15, 20, 40, 0.85)",
-    boxShadow: "0 0 80px rgba(255,138,0,0.25)",
-    color: "white",
-    textAlign: "center",
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 700,
-    marginBottom: 8,
-  },
-  address: {
-    fontSize: 13,
-    opacity: 0.7,
-    marginBottom: 28,
-  },
-  balanceBox: {
-    marginBottom: 24,
-  },
-  label: {
-    fontSize: 14,
-    opacity: 0.7,
+    background: "rgba(10,15,40,0.9)",
+    padding: 40,
+    borderRadius: 20,
+    width: 400,
   },
   balance: {
-    fontSize: 40,
-    fontWeight: 700,
-    margin: "6px 0",
-  },
-  apy: {
-    fontSize: 14,
-    color: "#7dd3fc",
+    marginTop: 30,
+    marginBottom: 30,
   },
   input: {
     width: "100%",
@@ -130,36 +118,14 @@ const styles = {
     borderRadius: 12,
     border: "none",
     marginBottom: 16,
+  },
+  button: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
+    color: "white",
     fontSize: 16,
-  },
-  actions: {
-    display: "flex",
-    gap: 12,
-    marginBottom: 24,
-  },
-  deposit: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    border: "none",
-    background: "linear-gradient(135deg,#ff8a00,#ffb703)",
-    color: "#111",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  withdraw: {
-    flex: 1,
-    padding: 14,
-    borderRadius: 14,
-    border: "none",
-    background: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
-    color: "#04121f",
-    fontWeight: 700,
-    cursor: "pointer",
-  },
-  status: {
-    fontSize: 13,
-    opacity: 0.8,
-    lineHeight: 1.6,
   },
 };
