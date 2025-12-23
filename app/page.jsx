@@ -8,53 +8,36 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
 
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
+  if (typeof window === "undefined") return;
 
-    try {
-      setLoading(true);
+  try {
+    setLoading(true);
 
-      const { EthereumProvider } = await import(
-        "@walletconnect/ethereum-provider"
-      );
-      const { WalletConnectModal } = await import(
-        "@walletconnect/modal"
-      );
+    const { EthereumProvider } = await import(
+      "@walletconnect/ethereum-provider"
+    );
 
-      const projectId = "DEIN_WALLETCONNECT_PROJECT_ID";
+    const projectId = "HIER_DEINE_ECHTE_PROJECT_ID"; // ❗ Pflicht
 
-      const provider = await EthereumProvider.init({
-        projectId,
-        chains: [1],
-        showQrModal: false,
-        methods: [
-          "eth_sendTransaction",
-          "eth_sign",
-          "eth_signTransaction",
-          "eth_signTypedData"
-        ],
-        events: ["chainChanged", "accountsChanged"]
-      });
+    const wcProvider = await EthereumProvider.init({
+      projectId,
+      chains: [1],
+      showQrModal: true // 🔥 DAS IST DER KEY
+    });
 
-      const modal = new WalletConnectModal({
-        projectId,
-        chains: [1]
-      });
+    await wcProvider.connect(); // öffnet AUTOMATISCH das Wallet-Modal
 
-      await modal.openModal();
-      await provider.connect();
+    const ethersProvider = new ethers.BrowserProvider(wcProvider);
+    const signer = await ethersProvider.getSigner();
+    const addr = await signer.getAddress();
 
-      const ethersProvider = new ethers.BrowserProvider(provider);
-      const signer = await ethersProvider.getSigner();
-      const addr = await signer.getAddress();
-
-      setAddress(addr);
-      modal.closeModal();
-    } catch (err) {
-      console.error("Connect error:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    setAddress(addr);
+  } catch (err) {
+    console.error("Connect error:", err);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <main
