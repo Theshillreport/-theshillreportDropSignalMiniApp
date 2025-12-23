@@ -1,115 +1,57 @@
+export const dynamic = "force-dynamic";
+export const revalidate = 0;
+
 "use client";
 
 import { useEffect, useState } from "react";
-import EthereumProvider from "@walletconnect/ethereum-provider";
-import { ethers } from "ethers";
 
 export default function Page() {
-  const [provider, setProvider] = useState<ethers.BrowserProvider | null>(null);
-  const [signer, setSigner] = useState<ethers.Signer | null>(null);
-  const [address, setAddress] = useState("");
-
-  const [balance, setBalance] = useState(0);
-  const [earned, setEarned] = useState(0);
-  const [amount, setAmount] = useState("");
-  const apy = 18.4;
-
-  /* -------- WALLET CONNECT -------- */
-
-  async function connectWallet() {
-    const wcProvider = await EthereumProvider.init({
-      projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
-      chains: [84532], // Base Sepolia
-      showQrModal: true
-    });
-
-    await wcProvider.enable();
-
-    const ethersProvider = new ethers.BrowserProvider(wcProvider as any);
-    const signer = await ethersProvider.getSigner();
-    const addr = await signer.getAddress();
-
-    setProvider(ethersProvider);
-    setSigner(signer);
-    setAddress(addr);
-  }
-
-  /* -------- AUTO YIELD -------- */
+  const [mounted, setMounted] = useState(false);
+  const [account, setAccount] = useState(null);
 
   useEffect(() => {
-    if (!address) return;
+    setMounted(true);
+  }, []);
 
-    const interval = setInterval(() => {
-      setBalance(b => {
-        if (b <= 0) return b;
-        const perSecond = apy / 100 / 31536000;
-        const gain = b * perSecond;
-        setEarned(e => e + gain);
-        return b + gain;
+  const connectWallet = async () => {
+    if (typeof window === "undefined") return;
+
+    if (!window.ethereum) {
+      alert("Please install a wallet (Farcaster, MetaMask, Coinbase).");
+      return;
+    }
+
+    try {
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
       });
-    }, 1000);
+      setAccount(accounts[0]);
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
-    return () => clearInterval(interval);
-  }, [address]);
-
-  function deposit() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0) return;
-    setBalance(b => b + v);
-    setAmount("");
-  }
-
-  function withdraw() {
-    const v = parseFloat(amount);
-    if (!v || v <= 0 || v > balance) return;
-    setBalance(b => b - v);
-    setAmount("");
-  }
-
-  /* -------- UI -------- */
+  if (!mounted) return null;
 
   return (
-    <main style={container}>
-      <div style={card}>
-        <h1 style={logo}>DropSignal</h1>
-        <p style={{ opacity: 0.7 }}>Deposit. Earn. Signal.</p>
+    <main style={styles.container}>
+      <div style={styles.background} />
 
-        {!address ? (
-          <button style={primary} onClick={connectWallet}>
-            Connect Wallet
+      <div style={styles.card}>
+        <h1 style={styles.logo}>DropSignal</h1>
+        <p style={styles.tagline}>Deposit. Earn. Signal.</p>
+
+        {!account ? (
+          <button onClick={connectWallet} style={styles.connectBtn}>
+            Connect
           </button>
         ) : (
           <>
-            <p style={addressStyle}>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </p>
-
-            <div style={box}>
-              <p>Balance</p>
-              <h2>${balance.toFixed(4)} USDC</h2>
-              <p style={{ color: "#4FD1FF" }}>
-                + ${earned.toFixed(4)} earned
-              </p>
+            <div style={styles.connected}>Connected</div>
+            <div style={styles.address}>
+              {account.slice(0, 6)}...{account.slice(-4)}
             </div>
-
-            <div style={box}>
-              <p>APY</p>
-              <h2>{apy}% • live</h2>
-            </div>
-
-            <input
-              style={input}
-              placeholder="Amount"
-              value={amount}
-              onChange={e => setAmount(e.target.value)}
-            />
-
-            <button style={primary} onClick={deposit}>
-              Deposit
-            </button>
-            <button style={secondary} onClick={withdraw}>
-              Withdraw
-            </button>
+            <div style={styles.ready}>Wallet connected. App unlocked.</div>
           </>
         )}
       </div>
@@ -117,50 +59,43 @@ export default function Page() {
   );
 }
 
-/* -------- STYLES -------- */
-
-const container = {
-  minHeight: "100vh",
-  background: "radial-gradient(circle at top,#1e1b4b,#020617)",
-  padding: 24
-};
-
-const card = {
-  maxWidth: 420,
-  margin: "0 auto",
-  color: "white"
-};
-
-const logo = { fontSize: 34, fontWeight: 800 };
-const addressStyle = { fontSize: 12, opacity: 0.6 };
-
-const box = {
-  background: "rgba(255,255,255,0.06)",
-  borderRadius: 16,
-  padding: 16,
-  marginTop: 16
-};
-
-const input = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  marginTop: 16
-};
-
-const primary = {
-  width: "100%",
-  padding: 14,
-  borderRadius: 12,
-  background: "#7c5cff",
-  color: "white",
-  border: "none",
-  marginTop: 12,
-  fontWeight: 700
-};
-
-const secondary = {
-  ...primary,
-  background: "transparent",
-  border: "1px solid #7c5cff"
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    position: "relative",
+    background: "#050B1E",
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+  background: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at top, #4f46e5 0%, transparent 60%), radial-gradient(circle at bottom, #9333ea 0%, transparent 60%)",
+    opacity: 0.35,
+  },
+  card: {
+    zIndex: 1,
+    background: "rgba(10,15,40,0.85)",
+    borderRadius: 20,
+    padding: 40,
+    width: 360,
+    textAlign: "center",
+  },
+  logo: { color: "#fff", fontSize: 28, fontWeight: 700 },
+  tagline: { color: "#a5b4fc", marginBottom: 30 },
+  connectBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    fontWeight: 600,
+    color: "#fff",
+    background: "linear-gradient(135deg,#6366f1,#9333ea)",
+  },
+  connected: { color: "#22c55e", marginBottom: 8 },
+  address: { color: "#c7d2fe", marginBottom: 12 },
+  ready: { color: "#94a3b8", fontSize: 13 },
 };
