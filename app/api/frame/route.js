@@ -5,7 +5,7 @@ export async function GET() {
       <html>
         <head>
           <meta property="og:title" content="Mein Frame" />
-          <meta property="og:image" content="https://DEINE-APP.vercel.app/frame-image.png" />
+          <meta property="og:image" content="https://theshillreport-drop-signal-mini-app.vercel.app/" />
 
           <!-- Frame aktivieren -->
           <meta name="fc:frame" content="vNext" />
