@@ -1,5 +1,5 @@
 export async function GET() {
-  const baseUrl = "https://DEINE-VERCEL-URL.vercel.app";
+  const baseUrl = "https://theshillreport-drop-signal-mini-app.vercel.app/";
 
   return new Response(
     `<!DOCTYPE html>
