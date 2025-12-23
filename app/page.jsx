@@ -28,7 +28,7 @@ export default function Page() {
     const { WalletConnectModal } = await import("@walletconnect/modal");
 
     const provider = await EthereumProvider.init({
-      projectId: "DEIN_WALLETCONNECT_PROJECT_ID",
+      projectId: "6a6f915ce160625cbc11e74f7bc284e0",
       chains: [1],
       showQrModal: false
     });
