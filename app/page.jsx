@@ -17,7 +17,7 @@ export default function Home() {
       "@walletconnect/ethereum-provider"
     );
 
-    const projectId = "HIER_DEINE_ECHTE_PROJECT_ID"; // ❗ Pflicht
+    const projectId = "6a6f915ce160625cbc11e74f7bc284e0"; // ❗ Pflicht
 
     const wcProvider = await EthereumProvider.init({
       projectId,
