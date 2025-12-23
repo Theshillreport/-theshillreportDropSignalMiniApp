@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
 
-const VAULT_ADDRESS = "DEINE_WALLET_ADRESSE_HIER"; // ⚠️ ersetzen
+const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69"; // ⚠️ ersetzen
 
 export default function AppDashboard({ address }) {
   const [provider, setProvider] = useState(null);
