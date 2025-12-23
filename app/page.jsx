@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
-import AppDashboard from "./components/AppDashboard";
+import AppDashboard from "../components/AppDashboard"; // ✅ FIX
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -45,7 +45,7 @@ export default function Home() {
     return <AppDashboard address={address} />;
   }
 
-  // ❌ NOCH NICHT VERBUNDEN → CONNECT SCREEN
+  // 🔐 LOGIN SCREEN (wie vorher)
   return (
     <main
       style={{
@@ -55,7 +55,7 @@ export default function Home() {
         alignItems: "center",
         justifyContent: "center",
         background:
-          "linear-gradient(135deg, #ff9a3c 0%, #5fd3ff 100%)",
+          "linear-gradient(135deg, #ff9f43 0%, #4facfe 100%)",
         color: "white"
       }}
     >
@@ -66,16 +66,16 @@ export default function Home() {
         onClick={connectWallet}
         disabled={loading}
         style={{
-          marginTop: 24,
-          padding: "14px 32px",
-          borderRadius: 14,
+          marginTop: 20,
+          padding: "14px 28px",
+          borderRadius: 12,
           background: "rgba(0,0,0,0.25)",
           border: "1px solid rgba(255,255,255,0.3)",
           color: "white",
           fontSize: 16,
           cursor: "pointer",
-          backdropFilter: "blur(10px)",
-          opacity: loading ? 0.6 : 1
+          opacity: loading ? 0.6 : 1,
+          backdropFilter: "blur(10px)"
         }}
       >
         {loading ? "Connecting..." : "Connect Wallet"}
