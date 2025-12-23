@@ -4,7 +4,8 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
 
-const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
+// 🔴 HIER DEINE DEPLOYTE VAULT-ADRESSE EINTRAGEN
+const VAULT_ADDRESS = "0xDEINE_VAULT_ADRESSE";
 
 const VAULT_ABI = [
   "function deposit(uint256 amount)",
@@ -14,8 +15,6 @@ const VAULT_ABI = [
 ];
 
 export default function AppDashboard({ address }) {
-  const [provider, setProvider] = useState(null);
-  const [signer, setSigner] = useState(null);
   const [usdc, setUsdc] = useState(null);
   const [vault, setVault] = useState(null);
 
@@ -24,23 +23,38 @@ export default function AppDashboard({ address }) {
   const [tvl, setTvl] = useState(0);
   const [amount, setAmount] = useState("");
   const [loading, setLoading] = useState(false);
+  const [apy] = useState(8.4);
+  const [referrer, setReferrer] = useState(null);
 
-  // Init
+  // Init Contracts
   useEffect(() => {
     if (!window.ethereum) return;
 
     const init = async () => {
-      const prov = new ethers.BrowserProvider(window.ethereum);
-      const sign = await prov.getSigner();
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
 
-      setProvider(prov);
-      setSigner(sign);
-
-      setUsdc(new ethers.Contract(USDC_ADDRESS, USDC_ABI, sign));
-      setVault(new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, sign));
+      setUsdc(new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer));
+      setVault(new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer));
     };
 
     init();
+  }, []);
+
+  // Referral laden
+  useEffect(() => {
+    const ref = localStorage.getItem("dropsignal_ref");
+    if (ref) setReferrer(ref);
+  }, []);
+
+  // Auto-Focus bei Farcaster Deposit
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "deposit") {
+      setTimeout(() => {
+        document.getElementById("deposit-input")?.focus();
+      }, 300);
+    }
   }, []);
 
   const loadData = async () => {
@@ -109,6 +123,11 @@ export default function AppDashboard({ address }) {
           {address.slice(0, 6)}...{address.slice(-4)}
         </p>
 
+        <div style={styles.apyBox}>
+          <span>Estimated APY</span>
+          <strong>{apy}%</strong>
+        </div>
+
         <div style={styles.stats}>
           <div>
             <span>Wallet</span>
@@ -125,6 +144,7 @@ export default function AppDashboard({ address }) {
         </div>
 
         <input
+          id="deposit-input"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           placeholder="Amount USDC"
@@ -139,8 +159,14 @@ export default function AppDashboard({ address }) {
           Withdraw
         </button>
 
+        {referrer && (
+          <p style={styles.ref}>
+            Referred by <strong>{referrer}</strong>
+          </p>
+        )}
+
         <p style={styles.note}>
-          1% fee on deposits • Base • Non-custodial
+          1% fee on deposits · Base · Non-custodial
         </p>
       </div>
     </main>
@@ -164,6 +190,14 @@ const styles = {
     textAlign: "center"
   },
   address: { opacity: 0.6 },
+  apyBox: {
+    marginTop: 16,
+    padding: 16,
+    borderRadius: 14,
+    background:
+      "linear-gradient(135deg, rgba(255,138,0,0.2), rgba(0,212,255,0.2))",
+    fontSize: 18
+  },
   stats: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
@@ -193,8 +227,13 @@ const styles = {
     border: "1px solid #38bdf8",
     color: "#38bdf8"
   },
+  ref: {
+    marginTop: 10,
+    fontSize: 12,
+    opacity: 0.6
+  },
   note: {
-    marginTop: 20,
+    marginTop: 16,
     opacity: 0.5,
     fontSize: 12
   }
