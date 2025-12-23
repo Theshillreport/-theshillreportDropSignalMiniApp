@@ -15,23 +15,14 @@ export default function AppDashboard({ address }) {
 
   // Init
   useEffect(() => {
-    if (!window.ethereum) return;
+  if (typeof window === "undefined") return;
 
-    const init = async () => {
-      const p = new ethers.BrowserProvider(window.ethereum);
-      const signer = await p.getSigner();
-      const contract = new ethers.Contract(
-        USDC_ADDRESS,
-        USDC_ABI,
-        signer
-      );
-      setProvider(p);
-      setUsdc(contract);
-    };
-
-    init();
-  }, []);
-
+  const params = new URLSearchParams(window.location.search);
+  if (params.get("action") === "deposit") {
+    // später: Deposit Modal automatisch öffnen
+    console.log("Deposit action from Farcaster");
+  }
+}, []);
   // Load Balance
   const loadBalance = async () => {
     if (!usdc || !address) return;
