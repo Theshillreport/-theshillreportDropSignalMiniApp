@@ -1,12 +1,23 @@
 "use client";
-import { useEffect } from "react";
-import { useState } from "react";
+
+import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import AppDashboard from "../components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
+
+  // 🔗 Referral speichern
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const params = new URLSearchParams(window.location.search);
+    const ref = params.get("ref");
+    if (ref) {
+      localStorage.setItem("dropsignal_ref", ref);
+    }
+  }, []);
 
   const connectWallet = async () => {
     if (typeof window === "undefined") return;
@@ -20,7 +31,7 @@ export default function Home() {
 
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453, 137], // Base + Polygon
+        chains: [8453],
         showQrModal: true,
       });
 
@@ -48,7 +59,9 @@ export default function Home() {
 
       <div style={styles.card}>
         <h1 style={styles.logo}>DropSignal</h1>
-        <p style={styles.tagline}>Deposit USDC. Earn Yield.</p>
+        <p style={styles.tagline}>
+          Deposit USDC · Earn Yield · Built on Base
+        </p>
 
         <button
           onClick={connectWallet}
