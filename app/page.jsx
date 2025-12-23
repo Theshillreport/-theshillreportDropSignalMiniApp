@@ -18,67 +18,85 @@ export default function Home() {
         "@walletconnect/ethereum-provider"
       );
 
-      const projectId = "6a6f915ce160625cbc11e74f7bc284e0";
-
       const wcProvider = await EthereumProvider.init({
-        projectId,
-        chains: [1],
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
+        chains: [8453, 137], // Base + Polygon
         showQrModal: true,
       });
 
       await wcProvider.connect();
 
-      const ethersProvider = new ethers.BrowserProvider(wcProvider);
-      const signer = await ethersProvider.getSigner();
+      const provider = new ethers.BrowserProvider(wcProvider);
+      const signer = await provider.getSigner();
       const addr = await signer.getAddress();
 
       setAddress(addr);
-    } catch (err) {
-      console.error("Connect error:", err);
+    } catch (e) {
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  // ✅ WICHTIG: Sobald Wallet verbunden → Dashboard
   if (address) {
     return <AppDashboard address={address} />;
   }
 
   return (
-    <main
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        justifyContent: "center",
-        background:
-          "linear-gradient(135deg, #ff9f43 0%, #4dabf7 100%)",
-        color: "white",
-      }}
-    >
-      <h1 style={{ fontSize: 42, fontWeight: 700 }}>DropSignal</h1>
-      <p style={{ opacity: 0.9 }}>Deposit. Earn. Signal.</p>
+    <main style={styles.container}>
+      <div style={styles.bg} />
 
-      <button
-        onClick={connectWallet}
-        disabled={loading}
-        style={{
-          marginTop: 24,
-          padding: "14px 32px",
-          borderRadius: 14,
-          background: "rgba(0,0,0,0.35)",
-          border: "1px solid rgba(255,255,255,0.3)",
-          color: "white",
-          fontSize: 16,
-          cursor: "pointer",
-          backdropFilter: "blur(8px)",
-          opacity: loading ? 0.6 : 1,
-        }}
-      >
-        {loading ? "Connecting..." : "Connect Wallet"}
-      </button>
+      <div style={styles.card}>
+        <h1 style={styles.logo}>DropSignal</h1>
+        <p style={styles.tagline}>Deposit USDC. Earn Yield.</p>
+
+        <button
+          onClick={connectWallet}
+          disabled={loading}
+          style={styles.button}
+        >
+          {loading ? "Connecting..." : "Connect Wallet"}
+        </button>
+      </div>
     </main>
   );
 }
+
+const styles = {
+  container: {
+    minHeight: "100vh",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    background: "#050b1e",
+    position: "relative",
+    color: "white",
+  },
+  bg: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at top left, #ff9f1c 0%, transparent 55%), radial-gradient(circle at bottom right, #38bdf8 0%, transparent 55%)",
+    opacity: 0.45,
+  },
+  card: {
+    zIndex: 1,
+    background: "rgba(10,15,40,0.9)",
+    padding: 40,
+    borderRadius: 20,
+    width: 360,
+    textAlign: "center",
+  },
+  logo: { fontSize: 32, fontWeight: 700 },
+  tagline: { opacity: 0.7, marginBottom: 30 },
+  button: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
+    color: "white",
+    fontSize: 16,
+    cursor: "pointer",
+  },
+};
