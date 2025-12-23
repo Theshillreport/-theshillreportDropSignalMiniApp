@@ -1,7 +1,7 @@
 export async function POST(req) {
   const body = await req.json();
 
-  const baseUrl = "https://DEINE-VERCEL-URL.vercel.app";
+  const baseUrl = "https://theshillreport-drop-signal-mini-app.vercel.app/";
 
   return new Response(
     `
