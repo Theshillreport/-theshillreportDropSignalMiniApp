@@ -14,6 +14,7 @@ export default function Home() {
     try {
       setLoading(true);
 
+      // 🔐 WalletConnect – dynamisch, nur im Browser
       const { EthereumProvider } = await import(
         "@walletconnect/ethereum-provider"
       );
@@ -21,27 +22,28 @@ export default function Home() {
         "@walletconnect/modal"
       );
 
-      const projectId = "DEIN_WALLETCONNECT_PROJECT_ID"; // bleibt so
+      const projectId = "DEIN_WALLETCONNECT_PROJECT_ID"; // ❗ MUSS gültig sein
 
       const provider = await EthereumProvider.init({
         projectId,
         chains: [1],
-        showQrModal: false,
+        showQrModal: true, // ✅ WICHTIG: Modal anzeigen
         methods: [
           "eth_sendTransaction",
           "eth_sign",
-          "eth_signTransaction",
-          "eth_signTypedData"
+          "eth_signTypedData",
+          "personal_sign"
         ],
-        events: ["chainChanged", "accountsChanged"]
+        events: ["accountsChanged", "chainChanged"]
       });
 
+      // 🪟 Wallet-Auswahl Fenster
       const modal = new WalletConnectModal({
         projectId,
         chains: [1]
       });
 
-      await modal.openModal();
+      modal.openModal();
       await provider.connect();
 
       const ethersProvider = new ethers.BrowserProvider(provider);
@@ -52,11 +54,18 @@ export default function Home() {
       modal.closeModal();
     } catch (err) {
       console.error("Connect error:", err);
+      alert("Wallet connection failed");
     } finally {
       setLoading(false);
     }
   };
 
+  // 🔄 Nach Connect → echte App
+  if (address) {
+    return <AppDashboard address={address} />;
+  }
+
+  // 🟣 Landing / Connect Screen
   return (
     <main
       style={{
@@ -66,36 +75,29 @@ export default function Home() {
         alignItems: "center",
         justifyContent: "center",
         background: "#0b1020",
-        color: "white",
-        padding: 20
+        color: "white"
       }}
     >
       <h1 style={{ fontSize: 42 }}>DropSignal</h1>
-      <p>Deposit. Earn. Signal.</p>
+      <p style={{ opacity: 0.8 }}>Deposit. Earn. Signal.</p>
 
-      {!address ? (
-        /* ⬇️ CONNECT VIEW */
-        <button
-          onClick={connectWallet}
-          disabled={loading}
-          style={{
-            marginTop: 20,
-            padding: "14px 28px",
-            borderRadius: 12,
-            background: "linear-gradient(135deg,#7c5cff,#00d4ff)",
-            border: "none",
-            color: "white",
-            fontSize: 16,
-            cursor: "pointer",
-            opacity: loading ? 0.6 : 1
-          }}
-        >
-          {loading ? "Connecting..." : "Connect Wallet"}
-        </button>
-      ) : (
-        /* ⬇️ APP VIEW (2) */
-        <AppDashboard address={address} />
-      )}
+      <button
+        onClick={connectWallet}
+        disabled={loading}
+        style={{
+          marginTop: 24,
+          padding: "14px 28px",
+          borderRadius: 12,
+          background: "linear-gradient(135deg,#7c5cff,#00d4ff)",
+          border: "none",
+          color: "white",
+          fontSize: 16,
+          cursor: "pointer",
+          opacity: loading ? 0.6 : 1
+        }}
+      >
+        {loading ? "Connecting..." : "Connect Wallet"}
+      </button>
     </main>
   );
 }
