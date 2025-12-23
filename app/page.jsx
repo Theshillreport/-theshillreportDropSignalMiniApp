@@ -23,7 +23,7 @@ export default function Home() {
       const wcProvider = await EthereumProvider.init({
         projectId,
         chains: [1],
-        showQrModal: true
+        showQrModal: true,
       });
 
       await wcProvider.connect();
@@ -40,7 +40,7 @@ export default function Home() {
     }
   };
 
-  // 🔁 WICHTIG: Nach Wallet-Connect → Dashboard
+  // ✅ WICHTIG: Sobald Wallet verbunden → Dashboard
   if (address) {
     return <AppDashboard address={address} />;
   }
@@ -53,26 +53,28 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background: "#0b1020",
-        color: "white"
+        background:
+          "linear-gradient(135deg, #ff9f43 0%, #4dabf7 100%)",
+        color: "white",
       }}
     >
-      <h1 style={{ fontSize: 42 }}>DropSignal</h1>
-      <p>Deposit. Earn. Signal.</p>
+      <h1 style={{ fontSize: 42, fontWeight: 700 }}>DropSignal</h1>
+      <p style={{ opacity: 0.9 }}>Deposit. Earn. Signal.</p>
 
       <button
         onClick={connectWallet}
         disabled={loading}
         style={{
-          marginTop: 20,
-          padding: "14px 28px",
-          borderRadius: 12,
-          background: "linear-gradient(135deg,#7c5cff,#00d4ff)",
-          border: "none",
+          marginTop: 24,
+          padding: "14px 32px",
+          borderRadius: 14,
+          background: "rgba(0,0,0,0.35)",
+          border: "1px solid rgba(255,255,255,0.3)",
           color: "white",
           fontSize: 16,
           cursor: "pointer",
-          opacity: loading ? 0.6 : 1
+          backdropFilter: "blur(8px)",
+          opacity: loading ? 0.6 : 1,
         }}
       >
         {loading ? "Connecting..." : "Connect Wallet"}
