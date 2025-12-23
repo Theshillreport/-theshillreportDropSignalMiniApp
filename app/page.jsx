@@ -2,42 +2,60 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
+import AppDashboard from "@/components/AppDashboard"; // ⬅️ NEU (1)
 
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
   const connectWallet = async () => {
-  if (typeof window === "undefined") return;
+    if (typeof window === "undefined") return;
 
-  try {
-    setLoading(true);
+    try {
+      setLoading(true);
 
-    const { EthereumProvider } = await import(
-      "@walletconnect/ethereum-provider"
-    );
+      const { EthereumProvider } = await import(
+        "@walletconnect/ethereum-provider"
+      );
+      const { WalletConnectModal } = await import(
+        "@walletconnect/modal"
+      );
 
-    const projectId = "6a6f915ce160625cbc11e74f7bc284e0"; // ❗ Pflicht
+      const projectId = "DEIN_WALLETCONNECT_PROJECT_ID"; // bleibt so
 
-    const wcProvider = await EthereumProvider.init({
-      projectId,
-      chains: [1],
-      showQrModal: true // 🔥 DAS IST DER KEY
-    });
+      const provider = await EthereumProvider.init({
+        projectId,
+        chains: [1],
+        showQrModal: false,
+        methods: [
+          "eth_sendTransaction",
+          "eth_sign",
+          "eth_signTransaction",
+          "eth_signTypedData"
+        ],
+        events: ["chainChanged", "accountsChanged"]
+      });
 
-    await wcProvider.connect(); // öffnet AUTOMATISCH das Wallet-Modal
+      const modal = new WalletConnectModal({
+        projectId,
+        chains: [1]
+      });
 
-    const ethersProvider = new ethers.BrowserProvider(wcProvider);
-    const signer = await ethersProvider.getSigner();
-    const addr = await signer.getAddress();
+      await modal.openModal();
+      await provider.connect();
 
-    setAddress(addr);
-  } catch (err) {
-    console.error("Connect error:", err);
-  } finally {
-    setLoading(false);
-  }
-};
+      const ethersProvider = new ethers.BrowserProvider(provider);
+      const signer = await ethersProvider.getSigner();
+      const addr = await signer.getAddress();
+
+      setAddress(addr);
+      modal.closeModal();
+    } catch (err) {
+      console.error("Connect error:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <main
@@ -48,13 +66,15 @@ export default function Home() {
         alignItems: "center",
         justifyContent: "center",
         background: "#0b1020",
-        color: "white"
+        color: "white",
+        padding: 20
       }}
     >
       <h1 style={{ fontSize: 42 }}>DropSignal</h1>
       <p>Deposit. Earn. Signal.</p>
 
       {!address ? (
+        /* ⬇️ CONNECT VIEW */
         <button
           onClick={connectWallet}
           disabled={loading}
@@ -73,9 +93,8 @@ export default function Home() {
           {loading ? "Connecting..." : "Connect Wallet"}
         </button>
       ) : (
-        <p style={{ marginTop: 20 }}>
-          Connected: {address.slice(0, 6)}...{address.slice(-4)}
-        </p>
+        /* ⬇️ APP VIEW (2) */
+        <AppDashboard address={address} />
       )}
     </main>
   );
