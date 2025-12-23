@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
 
-const VAULT_ADDRESS = "0xDEINE_VAULT_ADRESSE";
+const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
 
 const VAULT_ABI = [
   "function deposit(uint256)",
