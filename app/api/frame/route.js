@@ -6,18 +6,14 @@ export async function GET() {
     <meta property="og:title" content="Drop Signal Mini App" />
     <meta property="og:image" content="https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg" />
 
-    <!-- FRAME aktivieren -->
+    <!-- Frame aktivieren -->
     <meta name="fc:frame" content="vNext" />
-
-    <!-- Bild im Frame -->
     <meta name="fc:frame:image" content="https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg" />
 
-    <!-- BUTTON -->
-    <meta name="fc:frame:button:1" content="Deposit USDC" />
-    <meta name="fc:frame:button:1:action" content="post" />
-
-    <!-- wohin der Button postet -->
-    <meta name="fc:frame:post_url" content="https://theshillreport-drop-signal-mini-app.vercel.app/api/frame/action" />
+    <!-- BUTTON: öffnet Browser IN Farcaster -->
+    <meta name="fc:frame:button:1" content="Open App" />
+    <meta name="fc:frame:button:1:action" content="link" />
+    <meta name="fc:frame:button:1:target" content="https://theshillreport-drop-signal-mini-app.vercel.app/app" />
   </head>
   <body></body>
 </html>`,
