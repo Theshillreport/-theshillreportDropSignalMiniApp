@@ -2,20 +2,19 @@
 pragma solidity ^0.8.20;
 
 interface IERC20 {
-    function transferFrom(address, address, uint256) external returns (bool);
-    function transfer(address, uint256) external returns (bool);
-    function balanceOf(address) external view returns (uint256);
+    function transfer(address to, uint256 amount) external returns (bool);
+    function transferFrom(address from, address to, uint256 amount) external returns (bool);
+    function balanceOf(address user) external view returns (uint256);
 }
 
 contract DropSignalVault {
     IERC20 public immutable usdc;
     address public owner;
 
-    uint256 public constant APY = 720; // 7.20%
-    uint256 public constant FEE = 20;  // 20% performance fee
+    uint256 public feeBps = 100; // 1%
+    uint256 public totalDeposits;
 
-    mapping(address => uint256) public deposited;
-    mapping(address => uint256) public lastUpdate;
+    mapping(address => uint256) public balances;
 
     constructor(address _usdc) {
         usdc = IERC20(_usdc);
@@ -23,34 +22,30 @@ contract DropSignalVault {
     }
 
     function deposit(uint256 amount) external {
-        _accrue(msg.sender);
+        require(amount > 0, "amount = 0");
+
+        uint256 fee = (amount * feeBps) / 10_000;
+        uint256 net = amount - fee;
+
         usdc.transferFrom(msg.sender, address(this), amount);
-        deposited[msg.sender] += amount;
+        usdc.transfer(owner, fee);
+
+        balances[msg.sender] += net;
+        totalDeposits += net;
     }
 
     function withdraw(uint256 amount) external {
-        _accrue(msg.sender);
-        deposited[msg.sender] -= amount;
+        require(balances[msg.sender] >= amount, "insufficient");
+
+        balances[msg.sender] -= amount;
+        totalDeposits -= amount;
+
         usdc.transfer(msg.sender, amount);
     }
 
-    function earned(address user) public view returns (uint256) {
-        uint256 time = block.timestamp - lastUpdate[user];
-        return (deposited[user] * APY * time) / 10000 / 365 days;
-    }
-
-    function claim() external {
-        uint256 reward = earned(msg.sender);
-        uint256 fee = (reward * FEE) / 100;
-        lastUpdate[msg.sender] = block.timestamp;
-
-        usdc.transfer(owner, fee);
-        usdc.transfer(msg.sender, reward - fee);
-    }
-
-    function _accrue(address user) internal {
-        if (lastUpdate[user] == 0) {
-            lastUpdate[user] = block.timestamp;
-        }
+    function setFee(uint256 newFeeBps) external {
+        require(msg.sender == owner, "not owner");
+        require(newFeeBps <= 300, "max 3%");
+        feeBps = newFeeBps;
     }
 }
