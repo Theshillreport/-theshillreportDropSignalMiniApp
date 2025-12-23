@@ -4,12 +4,11 @@ import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
 
-// 🔴 HIER DEINE DEPLOYTE VAULT-ADRESSE EINTRAGEN
-const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
+const VAULT_ADDRESS = "0xDEINE_VAULT_ADRESSE";
 
 const VAULT_ABI = [
-  "function deposit(uint256 amount)",
-  "function withdraw(uint256 amount)",
+  "function deposit(uint256)",
+  "function withdraw(uint256)",
   "function balances(address) view returns (uint256)",
   "function totalDeposits() view returns (uint256)"
 ];
@@ -20,16 +19,13 @@ export default function AppDashboard({ address }) {
 
   const [walletBalance, setWalletBalance] = useState(0);
   const [vaultBalance, setVaultBalance] = useState(0);
-  const [tvl, setTvl] = useState(0);
   const [amount, setAmount] = useState("");
+  const [mode, setMode] = useState("deposit");
   const [loading, setLoading] = useState(false);
-  const [apy] = useState(8.4);
-  const [referrer, setReferrer] = useState(null);
 
-  // Init Contracts
+  const APY = 8.4;
+
   useEffect(() => {
-    if (!window.ethereum) return;
-
     const init = async () => {
       const provider = new ethers.BrowserProvider(window.ethereum);
       const signer = await provider.getSigner();
@@ -37,24 +33,7 @@ export default function AppDashboard({ address }) {
       setUsdc(new ethers.Contract(USDC_ADDRESS, USDC_ABI, signer));
       setVault(new ethers.Contract(VAULT_ADDRESS, VAULT_ABI, signer));
     };
-
     init();
-  }, []);
-
-  // Referral laden
-  useEffect(() => {
-    const ref = localStorage.getItem("dropsignal_ref");
-    if (ref) setReferrer(ref);
-  }, []);
-
-  // Auto-Focus bei Farcaster Deposit
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    if (params.get("action") === "deposit") {
-      setTimeout(() => {
-        document.getElementById("deposit-input")?.focus();
-      }, 300);
-    }
   }, []);
 
   const loadData = async () => {
@@ -62,48 +41,28 @@ export default function AppDashboard({ address }) {
 
     const wb = await usdc.balanceOf(address);
     const vb = await vault.balances(address);
-    const tvlRaw = await vault.totalDeposits();
 
     setWalletBalance(Number(ethers.formatUnits(wb, 6)));
     setVaultBalance(Number(ethers.formatUnits(vb, 6)));
-    setTvl(Number(ethers.formatUnits(tvlRaw, 6)));
   };
 
   useEffect(() => {
     loadData();
   }, [usdc, vault]);
 
-  const deposit = async () => {
+  const action = async () => {
     if (!amount) return;
     setLoading(true);
 
     try {
       const value = ethers.parseUnits(amount, 6);
 
-      const approveTx = await usdc.approve(VAULT_ADDRESS, value);
-      await approveTx.wait();
-
-      const tx = await vault.deposit(value);
-      await tx.wait();
-
-      setAmount("");
-      loadData();
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const withdraw = async () => {
-    if (!amount) return;
-    setLoading(true);
-
-    try {
-      const tx = await vault.withdraw(
-        ethers.parseUnits(amount, 6)
-      );
-      await tx.wait();
+      if (mode === "deposit") {
+        await (await usdc.approve(VAULT_ADDRESS, value)).wait();
+        await (await vault.deposit(value)).wait();
+      } else {
+        await (await vault.withdraw(value)).wait();
+      }
 
       setAmount("");
       loadData();
@@ -117,61 +76,67 @@ export default function AppDashboard({ address }) {
   return (
     <main style={styles.container}>
       <div style={styles.card}>
-        <h1>DropSignal Vault</h1>
 
-        <p style={styles.address}>
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </p>
-
-        <div style={styles.apyBox}>
-          <span>Estimated APY</span>
-          <strong>{apy}%</strong>
+        {/* BALANCE CARD */}
+        <div style={styles.balanceCard}>
+          <p style={styles.sub}>YOUR BALANCE</p>
+          <h1 style={styles.balance}>
+            ${vaultBalance.toFixed(2)}
+          </h1>
+          <p style={styles.apy}>•• APY {APY}%</p>
         </div>
 
-        <div style={styles.stats}>
-          <div>
-            <span>Wallet</span>
-            <strong>{walletBalance.toFixed(2)} USDC</strong>
+        {/* BOOSTS */}
+        <p style={styles.section}>EARN YOUR BOOSTS</p>
+        <div style={styles.boosts}>
+          <div style={styles.boost}>WELCOME BOOST<br /><span>+0.00%</span></div>
+          <div style={styles.boost}>REFERRAL BOOST<br /><span>+0.00%</span></div>
+        </div>
+
+        {/* TABS */}
+        <div style={styles.tabs}>
+          <button
+            onClick={() => setMode("deposit")}
+            style={mode === "deposit" ? styles.tabActive : styles.tab}
+          >
+            Deposit
+          </button>
+          <button
+            onClick={() => setMode("withdraw")}
+            style={mode === "withdraw" ? styles.tabActive : styles.tab}
+          >
+            Withdraw
+          </button>
+        </div>
+
+        {/* INPUT */}
+        <div style={styles.inputBox}>
+          <div style={styles.available}>
+            Available: {walletBalance.toFixed(2)} USDC
+            <span onClick={() => setAmount(walletBalance)}>MAX</span>
           </div>
-          <div>
-            <span>Your Vault</span>
-            <strong>{vaultBalance.toFixed(2)} USDC</strong>
-          </div>
-          <div>
-            <span>Total TVL</span>
-            <strong>{tvl.toFixed(2)} USDC</strong>
+
+          <div style={styles.amountRow}>
+            <input
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+              style={styles.amountInput}
+            />
+            <span>USDC</span>
           </div>
         </div>
 
-        <input
-          id="deposit-input"
-          value={amount}
-          onChange={(e) => setAmount(e.target.value)}
-          placeholder="Amount USDC"
-          style={styles.input}
-        />
-
-        <button onClick={deposit} disabled={loading} style={styles.primary}>
-          Deposit
+        <button onClick={action} disabled={loading} style={styles.actionBtn}>
+          {loading ? "Processing..." : mode === "deposit" ? "Deposit" : "Withdraw"}
         </button>
 
-        <button onClick={withdraw} disabled={loading} style={styles.secondary}>
-          Withdraw
-        </button>
-
-        {referrer && (
-          <p style={styles.ref}>
-            Referred by <strong>{referrer}</strong>
-          </p>
-        )}
-
-        <p style={styles.note}>
-          1% fee on deposits · Base · Non-custodial
-        </p>
       </div>
     </main>
   );
 }
+
+const glow = "0 0 40px rgba(255,140,0,0.35)";
 
 const styles = {
   container: {
@@ -184,57 +149,95 @@ const styles = {
   },
   card: {
     width: 380,
-    padding: 32,
-    borderRadius: 24,
-    background: "rgba(10,15,40,0.9)",
-    textAlign: "center"
+    padding: 24
   },
-  address: { opacity: 0.6 },
-  apyBox: {
-    marginTop: 16,
-    padding: 16,
-    borderRadius: 14,
-    background:
-      "linear-gradient(135deg, rgba(255,138,0,0.2), rgba(0,212,255,0.2))",
-    fontSize: 18
+  balanceCard: {
+    background: "radial-gradient(circle at top, #ff8a0030, #0a0f28)",
+    borderRadius: 20,
+    padding: 28,
+    textAlign: "center",
+    boxShadow: glow
   },
-  stats: {
-    display: "grid",
-    gridTemplateColumns: "1fr 1fr",
-    gap: 12,
-    margin: "24px 0"
+  sub: { opacity: 0.6, fontSize: 12 },
+  balance: { fontSize: 42, margin: "10px 0" },
+  apy: { color: "#38bdf8" },
+
+  section: {
+    margin: "28px 0 12px",
+    opacity: 0.6,
+    fontSize: 12
   },
-  input: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 10,
-    marginBottom: 12
+  boosts: {
+    display: "flex",
+    gap: 12
   },
-  primary: {
-    width: "100%",
+  boost: {
+    flex: 1,
     padding: 14,
-    borderRadius: 12,
+    borderRadius: 14,
+    background: "rgba(255,255,255,0.05)",
+    textAlign: "center",
+    fontSize: 12
+  },
+  tabs: {
+    display: "flex",
+    marginTop: 28,
+    background: "rgba(255,255,255,0.05)",
+    borderRadius: 16
+  },
+  tab: {
+    flex: 1,
+    padding: 14,
+    background: "transparent",
+    border: "none",
+    color: "white",
+    opacity: 0.4
+  },
+  tabActive: {
+    flex: 1,
+    padding: 14,
+    borderRadius: 16,
+    background: "linear-gradient(135deg,#ff8a00,#00d4ff)",
+    border: "none",
+    color: "white",
+    boxShadow: glow
+  },
+  inputBox: {
+    marginTop: 20,
+    background: "rgba(255,255,255,0.05)",
+    borderRadius: 16,
+    padding: 16
+  },
+  available: {
+    fontSize: 12,
+    opacity: 0.6,
+    display: "flex",
+    justifyContent: "space-between",
+    marginBottom: 10,
+    cursor: "pointer"
+  },
+  amountRow: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10
+  },
+  amountInput: {
+    flex: 1,
+    background: "transparent",
+    border: "none",
+    color: "white",
+    fontSize: 28,
+    outline: "none"
+  },
+  actionBtn: {
+    width: "100%",
+    marginTop: 24,
+    padding: 16,
+    borderRadius: 18,
+    border: "none",
     background: "linear-gradient(135deg,#ff8a00,#00d4ff)",
     color: "white",
-    border: "none",
-    marginBottom: 10
-  },
-  secondary: {
-    width: "100%",
-    padding: 14,
-    borderRadius: 12,
-    background: "transparent",
-    border: "1px solid #38bdf8",
-    color: "#38bdf8"
-  },
-  ref: {
-    marginTop: 10,
-    fontSize: 12,
-    opacity: 0.6
-  },
-  note: {
-    marginTop: 16,
-    opacity: 0.5,
-    fontSize: 12
+    fontSize: 16,
+    boxShadow: glow
   }
 };
