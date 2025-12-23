@@ -1,88 +1,69 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ethers } from "ethers";
-import { USDC_ADDRESS, USDC_ABI } from "../lib/usdc";
-
-const APY = 0.085;
+import { useState } from "react";
 
 export default function AppDashboard({ address }) {
   const [balance, setBalance] = useState(0);
-  const [liveBalance, setLiveBalance] = useState(0);
   const [amount, setAmount] = useState("");
-
-  // Fake Startwert = 0 (realistisch)
-  useEffect(() => {
-    setBalance(0);
-    setLiveBalance(0);
-  }, []);
-
-  // Live Yield Counter (nur UI)
-  useEffect(() => {
-    if (balance <= 0) return;
-
-    const yearly = balance * APY;
-    const perSecond = yearly / 31_536_000;
-
-    const i = setInterval(() => {
-      setLiveBalance((v) => v + perSecond);
-    }, 1000);
-
-    return () => clearInterval(i);
-  }, [balance]);
+  const APY = 8.5;
 
   const deposit = () => {
-    const val = Number(amount);
-    if (!val || val <= 0) return;
-
-    setBalance((b) => b + val);
-    setLiveBalance((b) => b + val);
+    if (!amount || Number(amount) <= 0) return;
+    setBalance((prev) => prev + Number(amount));
     setAmount("");
   };
 
   const withdraw = () => {
-    setBalance(0);
-    setLiveBalance(0);
+    if (!amount || Number(amount) <= 0) return;
+    setBalance((prev) => Math.max(prev - Number(amount), 0));
+    setAmount("");
   };
 
   return (
     <main style={styles.container}>
+      {/* Background */}
+      <div style={styles.background} />
+
+      {/* Dashboard Card */}
       <div style={styles.card}>
-        <h2 style={styles.title}>DEPOSIT USDC TO EARN YIELD</h2>
+        <h1 style={styles.title}>DropSignal Vault</h1>
 
-        <p style={styles.label}>Your Balance</p>
-        <div style={styles.balance}>
-          ${liveBalance.toFixed(2)}
+        <p style={styles.address}>
+          Connected: {address.slice(0, 6)}...{address.slice(-4)}
+        </p>
+
+        {/* Balance */}
+        <div style={styles.balanceBox}>
+          <p style={styles.label}>Your Balance</p>
+          <h2 style={styles.balance}>
+            {balance.toFixed(2)} <span style={{ fontSize: 18 }}>USDC</span>
+          </h2>
+          <p style={styles.apy}>APY: {APY}%</p>
         </div>
 
-        <div style={styles.apy}>
-          ● APY {(APY * 100).toFixed(2)}%
-        </div>
-
-        <div style={styles.boosts}>
-          <div style={styles.boost}>🔒 Welcome Boost +0.00%</div>
-          <div style={styles.boost}>🔒 Referral Boost +0.00%</div>
-        </div>
-
-        <div style={styles.actions}>
-          <button style={styles.primary} onClick={deposit}>
-            Deposit
-          </button>
-          <button style={styles.secondary} onClick={withdraw}>
-            Withdraw
-          </button>
-        </div>
-
+        {/* Input */}
         <input
-          placeholder="0.00 USDC"
+          placeholder="Amount"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
           style={styles.input}
         />
 
-        <p style={styles.wallet}>
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </p>
+        {/* Actions */}
+        <div style={styles.actions}>
+          <button onClick={deposit} style={styles.deposit}>
+            Deposit
+          </button>
+          <button onClick={withdraw} style={styles.withdraw}>
+            Withdraw
+          </button>
+        </div>
+
+        {/* Status */}
+        <div style={styles.status}>
+          <p>🟢 Vault Active</p>
+          <p>🔄 Yield Accruing</p>
+        </div>
       </div>
     </main>
   );
@@ -91,64 +72,94 @@ export default function AppDashboard({ address }) {
 const styles = {
   container: {
     minHeight: "100vh",
+    position: "relative",
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
+    background: "#060b18",
+    overflow: "hidden",
+    fontFamily: "Inter, system-ui, sans-serif",
+  },
+  background: {
+    position: "absolute",
+    inset: 0,
     background:
-      "radial-gradient(circle at top, #ff9f1c, transparent 60%), radial-gradient(circle at bottom, #4cc9f0, transparent 60%), #050b1e",
-    color: "white",
-    fontFamily: "Inter, system-ui"
+      "radial-gradient(circle at top left, #ff8a00 0%, transparent 55%), radial-gradient(circle at bottom right, #38bdf8 0%, transparent 55%)",
+    opacity: 0.45,
   },
   card: {
-    width: 360,
-    padding: 28,
-    borderRadius: 24,
-    background: "rgba(10,15,40,0.85)",
-    boxShadow: "0 0 80px rgba(255,160,60,0.25)",
-    textAlign: "center"
+    position: "relative",
+    zIndex: 1,
+    width: 380,
+    padding: "36px 32px",
+    borderRadius: 22,
+    background: "rgba(15, 20, 40, 0.85)",
+    boxShadow: "0 0 80px rgba(255,138,0,0.25)",
+    color: "white",
+    textAlign: "center",
   },
-  title: { fontSize: 14, opacity: 0.8 },
-  label: { marginTop: 20, opacity: 0.6 },
-  balance: { fontSize: 42, fontWeight: 700 },
-  apy: { marginTop: 8, color: "#4ade80" },
-  boosts: { marginTop: 20, opacity: 0.6 },
-  boost: { marginTop: 6 },
+  title: {
+    fontSize: 28,
+    fontWeight: 700,
+    marginBottom: 8,
+  },
+  address: {
+    fontSize: 13,
+    opacity: 0.7,
+    marginBottom: 28,
+  },
+  balanceBox: {
+    marginBottom: 24,
+  },
+  label: {
+    fontSize: 14,
+    opacity: 0.7,
+  },
+  balance: {
+    fontSize: 40,
+    fontWeight: 700,
+    margin: "6px 0",
+  },
+  apy: {
+    fontSize: 14,
+    color: "#7dd3fc",
+  },
+  input: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    marginBottom: 16,
+    fontSize: 16,
+  },
   actions: {
     display: "flex",
     gap: 12,
-    marginTop: 24
+    marginBottom: 24,
   },
-  primary: {
+  deposit: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderRadius: 14,
     border: "none",
-    background: "white",
-    fontWeight: 600,
-    cursor: "pointer"
+    background: "linear-gradient(135deg,#ff8a00,#ffb703)",
+    color: "#111",
+    fontWeight: 700,
+    cursor: "pointer",
   },
-  secondary: {
+  withdraw: {
     flex: 1,
-    padding: 12,
+    padding: 14,
     borderRadius: 14,
     border: "none",
-    background: "#111",
-    color: "white",
-    cursor: "pointer"
+    background: "linear-gradient(135deg,#38bdf8,#0ea5e9)",
+    color: "#04121f",
+    fontWeight: 700,
+    cursor: "pointer",
   },
-  input: {
-    marginTop: 16,
-    width: "100%",
-    padding: 12,
-    borderRadius: 12,
-    border: "none",
-    background: "#000",
-    color: "white",
-    textAlign: "center"
+  status: {
+    fontSize: 13,
+    opacity: 0.8,
+    lineHeight: 1.6,
   },
-  wallet: {
-    marginTop: 16,
-    fontSize: 12,
-    opacity: 0.5
-  }
 };
