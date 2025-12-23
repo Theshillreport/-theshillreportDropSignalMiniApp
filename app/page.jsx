@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
-import AppDashboard from "../components/AppDashboard"; // ✅ FIX
+import AppDashboard from "../components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -40,12 +40,11 @@ export default function Home() {
     }
   };
 
-  // ✅ WENN WALLET VERBUNDEN → DASHBOARD
+  // 🔁 WICHTIG: Nach Wallet-Connect → Dashboard
   if (address) {
     return <AppDashboard address={address} />;
   }
 
-  // 🔐 LOGIN SCREEN (wie vorher)
   return (
     <main
       style={{
@@ -54,8 +53,7 @@ export default function Home() {
         flexDirection: "column",
         alignItems: "center",
         justifyContent: "center",
-        background:
-          "linear-gradient(135deg, #ff9f43 0%, #4facfe 100%)",
+        background: "#0b1020",
         color: "white"
       }}
     >
@@ -69,13 +67,12 @@ export default function Home() {
           marginTop: 20,
           padding: "14px 28px",
           borderRadius: 12,
-          background: "rgba(0,0,0,0.25)",
-          border: "1px solid rgba(255,255,255,0.3)",
+          background: "linear-gradient(135deg,#7c5cff,#00d4ff)",
+          border: "none",
           color: "white",
           fontSize: 16,
           cursor: "pointer",
-          opacity: loading ? 0.6 : 1,
-          backdropFilter: "blur(10px)"
+          opacity: loading ? 0.6 : 1
         }}
       >
         {loading ? "Connecting..." : "Connect Wallet"}
