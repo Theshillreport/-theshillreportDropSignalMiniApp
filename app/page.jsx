@@ -22,7 +22,7 @@ export default function Home() {
         "@walletconnect/modal"
       );
 
-      const projectId = "DEIN_WALLETCONNECT_PROJECT_ID"; // ❗ MUSS gültig sein
+      const projectId = "6a6f915ce160625cbc11e74f7bc284e0"; // ❗ MUSS gültig sein
 
       const provider = await EthereumProvider.init({
         projectId,
