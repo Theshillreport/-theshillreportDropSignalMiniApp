@@ -1,23 +1,29 @@
 export async function GET() {
-  const baseUrl = "https://theshillreport-drop-signal-mini-app.vercel.app/";
-
   return new Response(
-    `<!DOCTYPE html>
-<html>
-  <head>
-    <meta property="og:title" content="DropSignal Vault" />
-    <meta property="og:description" content="Deposit USDC. Earn yield on Base." />
-    <meta property="og:image" content="${baseUrl}/frame.png" />
+    `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <meta property="og:title" content="Mein Frame" />
+          <meta property="og:image" content="https://DEINE-APP.vercel.app/frame-image.png" />
 
-    <meta property="fc:frame" content="vNext" />
-    <meta property="fc:frame:image" content="${baseUrl}/frame.png" />
-    <meta property="fc:frame:button:1" content="Deposit USDC" />
-    <meta property="fc:frame:button:1:action" content="link" />
-    <meta property="fc:frame:button:1:target" content="${baseUrl}/?action=deposit" />
-  </head>
-</html>`,
+          <!-- Frame aktivieren -->
+          <meta name="fc:frame" content="vNext" />
+
+          <!-- Erste Seite (Image + Button) -->
+          <meta name="fc:frame:image" content="https://DEINE-APP.vercel.app/frame-image.png" />
+          <meta name="fc:frame:button:1" content="Deposit USDC" />
+          <meta name="fc:frame:button:1:action" content="post" />
+          <meta name="fc:frame:post_url" content="https://DEINE-APP.vercel.app/api/frame/step2" />
+        </head>
+        <body></body>
+      </html>
+    `,
     {
-      headers: { "Content-Type": "text/html" }
+      headers: {
+        "Content-Type": "text/html",
+        "Cache-Control": "no-cache",
+      },
     }
   );
 }
