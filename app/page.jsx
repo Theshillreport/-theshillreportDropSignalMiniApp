@@ -1,10 +1,8 @@
 "use client";
 
-// import AppDashboard from "./components/AppDashboard";
-// import AppHeader from "./components/AppHeader";
-import AppDashboard from "./components/AppDashboard";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
-import AppHeader from "./components/AppHeader";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -32,7 +30,7 @@ export default function Home() {
       );
 
       const wcProvider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0", // ⚠️ dein Project ID
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0", // deine Project ID
         chains: [8453], // Base Mainnet
         showQrModal: true,
       });
@@ -45,30 +43,30 @@ export default function Home() {
 
       setAddress(addr);
     } catch (e) {
-      console.error(e);
+      console.error("Wallet connect error:", e);
+      alert("Wallet connection failed. Check console.");
     } finally {
       setLoading(false);
     }
   };
 
   // ========= Wenn Wallet verbunden =========
-if (address) {
-  return (
-    <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
-      <BackgroundMatrix />
+  if (address) {
+    return (
+      <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
+        <BackgroundMatrix />
 
-      <div style={{ padding: 40 }}>
-        <h1>Wallet Connected ✅</h1>
-        <p>Your address:</p>
-        <p style={{ opacity: 0.8 }}>{address}</p>
+        <div style={{ padding: 40 }}>
+          <h1>Wallet Connected ✅</h1>
+          <p>Your address:</p>
+          <p style={{ opacity: 0.8 }}>{address}</p>
 
-        <p style={{ marginTop: 20 }}>
-          🚧 Dashboard coming soon…
-        </p>
-      </div>
-    </main>
-  );
-}
+          <p style={{ marginTop: 20 }}>🚧 Dashboard coming soon…</p>
+        </div>
+      </main>
+    );
+  }
+
   // ========= Login Screen =========
   return (
     <main style={styles.container}>
