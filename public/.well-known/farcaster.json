@@ -1,7 +1,5 @@
 {
-  "name": "DropSignal",
-  "description": "Deposit. Earn. Signal.",
-  "icon": "/icon.png",
-  "developer": "theshillreport",
-  "homepage": "https://theshillreport-drop-signal-mini-app.vercel.app/"
+  "name": "Drop Signal",
+  "url": "https://theshillreport-drop-signal-mini-app.vercel.app",
+  "iconUrl": "https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg"
 }
