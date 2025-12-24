@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 import AppDashboard from "../components/AppDashboard";
+import BackgroundMatrix from "../components/BackgroundMatrix";
+import AppHeader from "../components/AppHeader";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -49,15 +51,29 @@ export default function Home() {
     }
   };
 
+  // ========= Wenn Wallet verbunden =========
   if (address) {
-    return <AppDashboard address={address} />;
+    return (
+      <main style={{ background: "#050b1e", minHeight: "100vh" }}>
+        <BackgroundMatrix />
+        <AppHeader address={address} />
+        <AppDashboard address={address} />
+      </main>
+    );
   }
 
+  // ========= Login Screen =========
   return (
     <main style={styles.container}>
-      <div style={styles.bg} />
+      <BackgroundMatrix />
 
       <div style={styles.card}>
+        <img
+          src="/logo.png"
+          style={{ width: 80, marginBottom: 10 }}
+          alt="logo"
+        />
+
         <h1 style={styles.logo}>DropSignal</h1>
         <p style={styles.tagline}>
           Deposit USDC · Earn Yield · Built on Base
@@ -85,23 +101,17 @@ const styles = {
     position: "relative",
     color: "white",
   },
-  bg: {
-    position: "absolute",
-    inset: 0,
-    background:
-      "radial-gradient(circle at top left, #ff9f1c 0%, transparent 55%), radial-gradient(circle at bottom right, #38bdf8 0%, transparent 55%)",
-    opacity: 0.45,
-  },
   card: {
-    zIndex: 1,
+    zIndex: 2,
     background: "rgba(10,15,40,0.9)",
     padding: 40,
     borderRadius: 20,
     width: 360,
     textAlign: "center",
+    border: "1px solid rgba(255,255,255,0.2)",
   },
   logo: { fontSize: 32, fontWeight: 700 },
-  tagline: { opacity: 0.7, marginBottom: 30 },
+  tagline: { opacity: 0.8, marginBottom: 30 },
   button: {
     width: "100%",
     padding: 14,
