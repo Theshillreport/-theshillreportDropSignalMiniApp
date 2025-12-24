@@ -6,20 +6,10 @@ import BackgroundMatrix from "./components/BackgroundMatrix";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
+  const [provider, setProvider] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Save referral
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref");
-    if (ref) localStorage.setItem("dropsignal_ref", ref);
-  }, []);
-
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
-
     try {
       setLoading(true);
 
@@ -31,14 +21,16 @@ export default function Home() {
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [8453],
         showQrModal: true,
+        disableProviderPing: false
       });
 
       await wcProvider.connect();
 
-      const provider = new ethers.BrowserProvider(wcProvider);
-      const signer = await provider.getSigner();
+      const browserProvider = new ethers.BrowserProvider(wcProvider);
+      const signer = await browserProvider.getSigner();
       const addr = await signer.getAddress();
 
+      setProvider(wcProvider);
       setAddress(addr);
     } catch (err) {
       console.error(err);
@@ -47,15 +39,12 @@ export default function Home() {
     }
   };
 
-  // ========= CONNECTED UI =========
-  const walletUI = address ? (
-    <div style={styles.connectedBox}>
-      <h3 style={{ marginBottom: 6 }}>Connected Wallet</h3>
-      <p style={{ opacity: 0.9 }}>
-        {address}
-      </p>
-    </div>
-  ) : null;
+  const disconnectWallet = async () => {
+    try {
+      if (provider) await provider.disconnect();
+    } catch {}
+    setAddress(null);
+  };
 
   return (
     <main style={styles.container}>
@@ -67,15 +56,17 @@ export default function Home() {
           <img
             src="/logo.png"
             alt="logo"
-            style={{ width: 40, height: 40, borderRadius: 10 }}
+            style={{ width: 42, height: 42, borderRadius: 10 }}
           />
           <span style={styles.brand}>DropSignal</span>
         </div>
 
         {address && (
           <div style={styles.addressBadge}>
-            {address.slice(0, 6)}...
-            {address.slice(-4)}
+            {address.slice(0, 6)}...{address.slice(-4)}
+            <button style={styles.disconnect} onClick={disconnectWallet}>
+              Disconnect
+            </button>
           </div>
         )}
       </div>
@@ -88,31 +79,35 @@ export default function Home() {
           Deposit USDC • Earn Yield • Powered by Base
         </p>
 
-        {/* CONNECT BUTTON ONLY IF NOT CONNECTED */}
         {!address && (
           <button
+            style={styles.button}
             onClick={connectWallet}
             disabled={loading}
-            style={styles.button}
           >
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         )}
 
-        {/* WALLET BOX WHEN CONNECTED */}
-        {walletUI}
+        {address && (
+          <div style={styles.connectedBox}>
+            <h3>Connected Wallet</h3>
+            <p style={{ opacity: 0.9 }}>{address}</p>
+
+            <p style={{ marginTop: 10, opacity: 0.7 }}>
+              🚧 Deposit / Withdraw UI kommt gleich! (aber Design bleibt!)
+            </p>
+          </div>
+        )}
       </div>
     </main>
   );
 }
 
-// ===== STYLES =====
 const styles = {
   container: {
     minHeight: "100vh",
     width: "100%",
-    background: "#02050f",
-    overflow: "hidden",
     position: "relative",
     color: "white",
   },
@@ -123,7 +118,6 @@ const styles = {
     left: 20,
     right: 20,
     display: "flex",
-    alignItems: "center",
     justifyContent: "space-between",
     zIndex: 3,
   },
@@ -135,55 +129,56 @@ const styles = {
   },
 
   brand: {
-    fontSize: 24,
-    fontWeight: 700,
+    fontSize: 26,
+    fontWeight: 800,
   },
 
   addressBadge: {
-    padding: "10px 16px",
+    padding: "10px 14px",
     borderRadius: 14,
     background: "rgba(255,255,255,0.15)",
     border: "1px solid rgba(255,255,255,0.3)",
   },
 
+  disconnect: {
+    marginLeft: 10,
+    background: "transparent",
+    color: "white",
+    border: "1px solid white",
+    borderRadius: 8,
+    padding: "5px 10px",
+    cursor: "pointer",
+  },
+
   card: {
     zIndex: 3,
     marginTop: "25vh",
+    width: 380,
     marginLeft: "auto",
     marginRight: "auto",
-    width: 380,
-    background: "rgba(0,0,0,0.7)",
-    borderRadius: 20,
     padding: 30,
-    textAlign: "center",
+    borderRadius: 20,
+    background: "rgba(0,0,0,0.7)",
     border: "1px solid rgba(255,255,255,0.2)",
+    textAlign: "center",
   },
 
-  title: {
-    fontSize: 28,
-    fontWeight: 800,
-  },
-
-  tagline: {
-    marginTop: 10,
-    opacity: 0.9,
-    fontSize: 14,
-    marginBottom: 25,
-  },
+  title: { fontSize: 30, fontWeight: 900 },
+  tagline: { opacity: 0.9, marginBottom: 22 },
 
   button: {
     width: "100%",
     padding: 14,
-    fontSize: 16,
     borderRadius: 12,
     border: "none",
-    cursor: "pointer",
+    fontSize: 16,
     background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
+    cursor: "pointer",
     color: "white",
   },
 
   connectedBox: {
-    marginTop: 20,
+    marginTop: 18,
     padding: 16,
     borderRadius: 16,
     background: "rgba(255,255,255,0.1)",
