@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-// Interfaces
 import "https://github.com/aave/aave-v3-core/blob/master/contracts/interfaces/IPool.sol";
 import "https://github.com/aave/aave-v3-core/blob/master/contracts/dependencies/openzeppelin/contracts/IERC20.sol";
 
@@ -47,13 +46,14 @@ contract BaseYieldVault {
     }
 
     function getEarnings(address user) external view returns (uint256) {
-        uint256 current = usdc.balanceOf(address(this));
+        // Note: This is simplistic: in reality, Aave earnings are reflected in the aUSDC balance
         uint256 invested = deposits[user];
+        uint256 current = usdc.balanceOf(address(this));
         if (current <= invested) return 0;
         return current - invested;
     }
 
     function getAPY() external pure returns (uint256) {
-        return 0; // Optional: dynamic APY logic later
+        return 0;
     }
 }
