@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
@@ -13,6 +13,12 @@ export default function Home() {
     try {
       setLoading(true);
 
+      // Session reset -> VERHINDERT AUTO CONNECT
+      if (typeof localStorage !== "undefined") {
+        localStorage.removeItem("wc@2:core:pairing");
+        localStorage.removeItem("wc@2:client:session");
+      }
+
       const { EthereumProvider } = await import(
         "@walletconnect/ethereum-provider"
       );
@@ -20,8 +26,7 @@ export default function Home() {
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [8453],
-        showQrModal: true,
-        disableProviderPing: false
+        showQrModal: true
       });
 
       await wcProvider.connect();
@@ -32,11 +37,13 @@ export default function Home() {
 
       setProvider(wcProvider);
       setAddress(addr);
+
+      wcProvider.on("disconnect", () => setAddress(null));
     } catch (err) {
-      console.error(err);
-    } finally {
-      setLoading(false);
+      console.log("Wallet error:", err);
     }
+
+    setLoading(false);
   };
 
   const disconnectWallet = async () => {
@@ -44,6 +51,10 @@ export default function Home() {
       if (provider) await provider.disconnect();
     } catch {}
     setAddress(null);
+
+    if (typeof localStorage !== "undefined") {
+      localStorage.removeItem("wc@2:client:session");
+    }
   };
 
   return (
@@ -53,16 +64,12 @@ export default function Home() {
       {/* HEADER */}
       <div style={styles.header}>
         <div style={styles.logoWrap}>
-          <img
-            src="/logo.png"
-            alt="logo"
-            style={{ width: 42, height: 42, borderRadius: 10 }}
-          />
+          <img src="/logo.png" style={styles.logo} alt="logo" />
           <span style={styles.brand}>DropSignal</span>
         </div>
 
         {address && (
-          <div style={styles.addressBadge}>
+          <div style={styles.walletBox}>
             {address.slice(0, 6)}...{address.slice(-4)}
             <button style={styles.disconnect} onClick={disconnectWallet}>
               Disconnect
@@ -73,29 +80,21 @@ export default function Home() {
 
       {/* MAIN CARD */}
       <div style={styles.card}>
-        <h1 style={styles.title}>Welcome to DropSignal</h1>
-
-        <p style={styles.tagline}>
-          Deposit USDC • Earn Yield • Powered by Base
-        </p>
+        <h1 style={styles.title}>DropSignal</h1>
+        <p style={styles.sub}>Deposit • Earn • Base Network</p>
 
         {!address && (
-          <button
-            style={styles.button}
-            onClick={connectWallet}
-            disabled={loading}
-          >
+          <button style={styles.btn} onClick={connectWallet} disabled={loading}>
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         )}
 
         {address && (
           <div style={styles.connectedBox}>
-            <h3>Connected Wallet</h3>
-            <p style={{ opacity: 0.9 }}>{address}</p>
-
-            <p style={{ marginTop: 10, opacity: 0.7 }}>
-              🚧 Deposit / Withdraw UI kommt gleich! (aber Design bleibt!)
+            <h3>Wallet Connected</h3>
+            <p>{address}</p>
+            <p style={{ opacity: 0.7 }}>
+              Dashboard wird gleich eingebaut – aber App bleibt jetzt stabil 😎
             </p>
           </div>
         )}
@@ -105,76 +104,54 @@ export default function Home() {
 }
 
 const styles = {
-  container: {
-    minHeight: "100vh",
-    width: "100%",
-    position: "relative",
-    color: "white",
-  },
-
+  container: { width: "100%", minHeight: "100vh", position: "relative", color: "white" },
   header: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    right: 20,
-    display: "flex",
-    justifyContent: "space-between",
-    zIndex: 3,
+    position: "absolute", top: 20, left: 20, right: 20,
+    display: "flex", justifyContent: "space-between", alignItems: "center", zIndex: 3,
   },
+  logoWrap: { display: "flex", alignItems: "center", gap: 12 },
+  logo: { width: 42, height: 42, borderRadius: 10, objectFit: "cover" },
+  brand: { fontSize: 26, fontWeight: 900 },
 
-  logoWrap: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-  },
-
-  brand: {
-    fontSize: 26,
-    fontWeight: 800,
-  },
-
-  addressBadge: {
-    padding: "10px 14px",
-    borderRadius: 14,
-    background: "rgba(255,255,255,0.15)",
-    border: "1px solid rgba(255,255,255,0.3)",
+  walletBox: {
+    padding: "10px 12px",
+    borderRadius: 12,
+    background: "rgba(255,255,255,0.2)",
+    border: "1px solid rgba(255,255,255,0.4)",
   },
 
   disconnect: {
     marginLeft: 10,
     background: "transparent",
-    color: "white",
     border: "1px solid white",
     borderRadius: 8,
-    padding: "5px 10px",
-    cursor: "pointer",
+    padding: "4px 8px",
+    color: "white",
   },
 
   card: {
     zIndex: 3,
-    marginTop: "25vh",
     width: 380,
-    marginLeft: "auto",
-    marginRight: "auto",
+    margin: "28vh auto 0",
     padding: 30,
-    borderRadius: 20,
-    background: "rgba(0,0,0,0.7)",
-    border: "1px solid rgba(255,255,255,0.2)",
     textAlign: "center",
+    borderRadius: 18,
+    background: "rgba(0,0,0,0.7)",
+    border: "1px solid rgba(255,255,255,0.25)",
   },
 
-  title: { fontSize: 30, fontWeight: 900 },
-  tagline: { opacity: 0.9, marginBottom: 22 },
+  title: { fontSize: 32, fontWeight: 900 },
+  sub: { marginBottom: 20, opacity: 0.9 },
 
-  button: {
+  btn: {
     width: "100%",
     padding: 14,
     borderRadius: 12,
     border: "none",
-    fontSize: 16,
     background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
-    cursor: "pointer",
     color: "white",
+    fontSize: 17,
+    cursor: "pointer",
   },
 
   connectedBox: {
