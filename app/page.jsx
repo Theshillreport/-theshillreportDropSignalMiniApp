@@ -2,250 +2,238 @@
 
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
-import BackgroundMatrix from "./components/BackgroundMatrix";
+import Image from "next/image";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [provider, setProvider] = useState(null);
-
-  const [deposit, setDeposit] = useState("0.00");
-  const [earnings, setEarnings] = useState("0.00");
-  const [apy, setApy] = useState("0");
-
-  const [loading, setLoading] = useState(false);
+  const [balance, setBalance] = useState(0);
+  const [apy, setApy] = useState(0);
+  const [activeTab, setActiveTab] = useState("deposit");
   const [amount, setAmount] = useState("");
 
-  const CONTRACT_ADDRESS = "PASTE_DEINEN_CONTRACT_HIER";
-  const USDC_ADDRESS = "PASTE_USDC_TOKEN_HIER";
+  const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+  const AAVE_POOL = "0x6Ae63C4E349A8675D8aC49f37b51f72dF6bD29c1";
 
-  const ABI = [
-    "function deposit(uint256 amount) external",
-    "function withdraw() external",
-    "function getUserDeposit(address user) public view returns(uint256)",
-    "function getEarnings(address user) public view returns(uint256)",
-    "function getAPY() public view returns(uint256)"
+  const USDC_ABI = [
+    "function balanceOf(address) view returns (uint256)",
+    "function approve(address spender, uint256 value)",
+    "function allowance(address owner, address spender) view returns (uint256)"
   ];
 
+  const AAVE_ABI = [
+    "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode)",
+    "function withdraw(address asset,uint256 amount,address to)",
+    "function getReserveData(address asset) view returns (uint256 configuration, uint128 liquidityIndex,uint128 currentLiquidityRate,uint128 variableBorrowRate,uint128 stableBorrowRate,uint40 lastUpdateTimestamp)"
+  ];
+
+  // CONNECT WALLET
   const connectWallet = async () => {
-    try {
-      setLoading(true);
+    const eth = window.ethereum;
+    if (!eth) return alert("Install Wallet!");
 
-      if (typeof window === "undefined") return;
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: "0x2105" }] });
 
-      const { EthereumProvider } = await import(
-        "@walletconnect/ethereum-provider"
-      );
+    const prov = new ethers.BrowserProvider(eth);
+    const signer = await prov.getSigner();
+    const addr = await signer.getAddress();
 
-      const wcProvider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [1],
-        showQrModal: true
-      });
-
-      await wcProvider.connect();
-
-      const ethersProvider = new ethers.BrowserProvider(wcProvider);
-      const signer = await ethersProvider.getSigner();
-      const addr = await signer.getAddress();
-
-      setAddress(addr);
-      setProvider(signer);
-    } catch (err) {
-      console.log(err);
-    } finally {
-      setLoading(false);
-    }
+    setProvider(prov);
+    setAddress(addr);
   };
 
-  const loadData = async () => {
+  // LOAD LIVE APY
+  const loadAaveData = async () => {
+    if (!provider) return;
+
+    const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, provider);
+    const data = await pool.getReserveData(USDC);
+
+    const liquidityRate = Number(data.currentLiquidityRate) / 1e27;
+    const yearly = liquidityRate * 100;
+
+    setApy(yearly.toFixed(2));
+  };
+
+  // LOAD USER BALANCE
+  const loadBalance = async () => {
     if (!provider || !address) return;
 
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
+    const token = new ethers.Contract(USDC, USDC_ABI, provider);
+    const bal = await token.balanceOf(address);
 
-    const dep = await contract.getUserDeposit(address);
-    const earn = await contract.getEarnings(address);
-    const apyData = await contract.getAPY();
-
-    setDeposit(Number(ethers.formatUnits(dep, 6)).toFixed(2));
-    setEarnings(Number(ethers.formatUnits(earn, 6)).toFixed(6));
-    setApy(apyData.toString());
+    setBalance(Number(ethers.formatUnits(bal, 6)).toFixed(2));
   };
 
   useEffect(() => {
-    if (address) loadData();
+    if (address) {
+      loadBalance();
+      loadAaveData();
+    }
   }, [address]);
 
-  const depositUSDC = async () => {
-    if (!amount || !provider) return;
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-    const usdc = new ethers.Contract(
-      USDC_ADDRESS,
-      ["function approve(address spender,uint256 amount) public returns(bool)"],
-      provider
-    );
+  // DEPOSIT
+  const deposit = async () => {
+    if (!provider) return;
+
+    const signer = await provider.getSigner();
+    const token = new ethers.Contract(USDC, USDC_ABI, signer);
+    const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
 
     const value = ethers.parseUnits(amount, 6);
 
-    await usdc.approve(CONTRACT_ADDRESS, value);
-    await contract.deposit(value);
+    await token.approve(AAVE_POOL, value);
+    await pool.supply(USDC, value, address, 0);
 
-    loadData();
+    alert("Deposit Successful!");
+    loadBalance();
   };
 
-  const withdrawAll = async () => {
+  // WITHDRAW
+  const withdraw = async () => {
     if (!provider) return;
-    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-    await contract.withdraw();
-    loadData();
+
+    const signer = await provider.getSigner();
+    const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
+
+    await pool.withdraw(USDC, ethers.MaxUint256, address);
+
+    alert("Withdraw Successful!");
+    loadBalance();
   };
 
   return (
     <main style={styles.page}>
-      <BackgroundMatrix />
+      {!address ? (
+        <button style={styles.connect} onClick={connectWallet}>
+          Connect Wallet
+        </button>
+      ) : (
+        <>
+          {/* HEADER */}
+          <div style={styles.header}>
+            <div style={styles.logo}>
+              <Image src="/logo.png" alt="DropSignal" width={40} height={40} style={{ borderRadius: 50 }} />
+              <span style={{ marginLeft: 10 }}>DropSignal</span>
+            </div>
 
-      {/* TOP BAR */}
-      <div style={styles.topBar}>
-        <img src="/logo.png" style={styles.logo} />
-        {address && (
-          <div style={styles.profile}>
-            {address.slice(0, 6)}...{address.slice(-4)}
+            <div style={styles.profile}>
+              {address.slice(0, 6)}...{address.slice(-4)}
+            </div>
           </div>
-        )}
-      </div>
 
-      {/* CENTER */}
-      <div style={styles.container}>
-        {!address ? (
-          <>
-            <h1 style={styles.title}>Deposit • Earn • Signal</h1>
-            <button
-              onClick={connectWallet}
-              disabled={loading}
-              style={styles.connect}
-            >
-              {loading ? "Connecting..." : "Connect Wallet"}
-            </button>
-          </>
-        ) : (
-          <>
-            <h1 style={styles.dashboard}>Dashboard</h1>
+          {/* CARD */}
+          <div style={styles.card}>
+            <p style={styles.title}>DEPOSIT USDC TO EARN YIELD</p>
 
-            <div style={styles.card}>
-              <p>Total Deposited</p>
-              <h2>{deposit} USDC</h2>
-            </div>
+            <h1>${balance}</h1>
 
-            <div style={styles.card}>
-              <p>Live Earnings</p>
-              <h2>
-                {deposit > 0 ? `+${earnings} USDC` : "0.00 USDC"}
-              </h2>
-            </div>
+            <p>APY: {apy ? `${apy}%` : ".."}</p>
 
-            <div style={styles.card}>
-              <p>APY</p>
-              <h2>{apy}%</h2>
-            </div>
-
-            <input
-              placeholder="Amount USDC"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              style={styles.input}
-            />
-
-            <div style={styles.btnRow}>
-              <button style={styles.depositBtn} onClick={depositUSDC}>
+            {/* TABS */}
+            <div style={styles.tabs}>
+              <button
+                style={activeTab === "deposit" ? styles.tabActive : styles.tab}
+                onClick={() => setActiveTab("deposit")}
+              >
                 Deposit
               </button>
-              <button style={styles.withdrawBtn} onClick={withdrawAll}>
+
+              <button
+                style={activeTab === "withdraw" ? styles.tabActive : styles.tab}
+                onClick={() => setActiveTab("withdraw")}
+              >
                 Withdraw
               </button>
             </div>
-          </>
-        )}
-      </div>
+
+            {/* INPUT */}
+            {activeTab === "deposit" ? (
+              <>
+                <input
+                  style={styles.input}
+                  placeholder="Amount USDC"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                />
+                <button style={styles.green} onClick={deposit}>
+                  Deposit
+                </button>
+              </>
+            ) : (
+              <button style={styles.white} onClick={withdraw}>
+                Withdraw All
+              </button>
+            )}
+          </div>
+        </>
+      )}
     </main>
   );
 }
 
+// STYLES
 const styles = {
-  page: {
-    background: "#000",
-    minHeight: "100vh",
-    color: "white",
-    position: "relative"
-  },
-  topBar: {
-    position: "absolute",
-    top: 20,
-    left: 20,
-    right: 20,
-    display: "flex",
-    justifyContent: "space-between",
-    zIndex: 10
-  },
-  logo: {
-    width: 110
-  },
-  profile: {
-    padding: 12,
-    borderRadius: 12,
-    border: "1px solid white"
-  },
-  container: {
-    zIndex: 5,
-    position: "relative",
-    marginTop: 120,
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    gap: 18
-  },
-  title: { fontSize: 28 },
-  dashboard: { fontSize: 36 },
+  page: { minHeight: "100vh", background: "black", color: "white", padding: 20 },
+  connect: { marginTop: 200, padding: 20, borderRadius: 12, fontSize: 18 },
+
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center" },
+  logo: { display: "flex", alignItems: "center", fontSize: 18, fontWeight: 700 },
+  profile: { padding: 10, borderRadius: 12, border: "1px solid white" },
+
   card: {
-    background: "rgba(0,0,0,.7)",
-    padding: 20,
-    borderRadius: 18,
-    width: "90%",
-    textAlign: "center",
-    border: "1px solid rgba(255,255,255,0.4)"
+    marginTop: 30,
+    padding: 25,
+    borderRadius: 20,
+    background: "rgba(0,0,0,.6)",
+    border: "1px solid rgba(255,255,255,0.2)",
+    textAlign: "center"
   },
-  input: {
-    padding: 12,
-    width: "80%",
+
+  title: { opacity: 0.7 },
+
+  tabs: { display: "flex", marginTop: 20 },
+  tab: {
+    flex: 1,
+    padding: 10,
     borderRadius: 12,
-    border: "none",
-    textAlign: "center",
-    fontSize: 16
-  },
-  btnRow: {
-    display: "flex",
-    gap: 16
-  },
-  depositBtn: {
-    padding: "14px 20px",
-    borderRadius: 14,
-    border: "none",
-    background: "#00ffb3",
-    fontSize: 16
-  },
-  withdrawBtn: {
-    padding: "14px 20px",
-    borderRadius: 14,
-    border: "1px solid white",
     background: "transparent",
-    fontSize: 16,
+    border: "1px solid white",
     color: "white"
   },
-  connect: {
-    padding: "16px 26px",
-    borderRadius: 14,
-    border: "none",
-    background:
-      "linear-gradient(135deg, #6a5cff, #00d4ff)",
-    color: "white",
-    fontSize: 18
+  tabActive: {
+    flex: 1,
+    padding: 10,
+    borderRadius: 12,
+    background: "white",
+    border: "1px solid white",
+    color: "black"
+  },
+
+  input: {
+    marginTop: 20,
+    padding: 12,
+    width: "100%",
+    borderRadius: 12,
+    border: "1px solid white",
+    background: "transparent",
+    color: "white"
+  },
+
+  green: {
+    marginTop: 15,
+    padding: 12,
+    borderRadius: 12,
+    background: "#00ffae",
+    border: "none"
+  },
+
+  white: {
+    marginTop: 15,
+    padding: 12,
+    borderRadius: 12,
+    border: "1px solid white",
+    background: "transparent",
+    color: "white"
   }
 };
