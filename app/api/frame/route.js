@@ -1,6 +1,6 @@
 export async function GET() {
   return new Response(`
-    <!DOCTYPE html>
+<!DOCTYPE html>
 <html>
   <head>
     <meta name="fc:frame" content="vNext" />
