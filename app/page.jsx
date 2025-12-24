@@ -1,10 +1,11 @@
 "use client";
 
-import AppDashboard from "../components/AppDashboard";
-import BackgroundMatrix from "../components/BackgroundMatrix";
-import AppHeader from "../components/AppHeader";
-import BackgroundMatrix from "../components/BackgroundMatrix";
-import AppHeader from "../components/AppHeader";
+import { useEffect, useState } from "react";
+import { ethers } from "ethers";
+
+import AppDashboard from "./components/AppDashboard";
+import BackgroundMatrix from "./components/BackgroundMatrix";
+import AppHeader from "./components/AppHeader";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -32,8 +33,8 @@ export default function Home() {
       );
 
       const wcProvider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453],
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0", // ⚠️ dein Project ID
+        chains: [8453], // Base Mainnet
         showQrModal: true,
       });
 
@@ -70,13 +71,14 @@ export default function Home() {
       <div style={styles.card}>
         <img
           src="/logo.png"
-          style={{ width: 80, marginBottom: 10 }}
+          style={{ width: 120, marginBottom: 10, borderRadius: 10 }}
           alt="logo"
         />
 
         <h1 style={styles.logo}>DropSignal</h1>
+
         <p style={styles.tagline}>
-          Deposit USDC · Earn Yield · Built on Base
+          Deposit USDC • Supercharge Your Yield • Powered by Base
         </p>
 
         <button
@@ -111,7 +113,7 @@ const styles = {
     border: "1px solid rgba(255,255,255,0.2)",
   },
   logo: { fontSize: 32, fontWeight: 700 },
-  tagline: { opacity: 0.8, marginBottom: 30 },
+  tagline: { opacity: 0.9, marginBottom: 30, fontSize: 14 },
   button: {
     width: "100%",
     padding: 14,
