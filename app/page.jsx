@@ -2,7 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+
+// ❗ GANZ WICHTIG: Diese drei Dateien müssen existieren in /app/components
 import BackgroundMatrix from "./components/BackgroundMatrix";
+import AppHeader from "./components/AppHeader";
+import AppDashboard from "./components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -43,8 +47,7 @@ export default function Home() {
 
       setAddress(addr);
     } catch (e) {
-      console.error("Wallet connect error:", e);
-      alert("Wallet connection failed. Check console.");
+      console.error("Wallet Connect Error:", e);
     } finally {
       setLoading(false);
     }
@@ -56,13 +59,11 @@ export default function Home() {
       <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
         <BackgroundMatrix />
 
-        <div style={{ padding: 40 }}>
-          <h1>Wallet Connected ✅</h1>
-          <p>Your address:</p>
-          <p style={{ opacity: 0.8 }}>{address}</p>
+        {/* 🔥 Deine App oben */}
+        <AppHeader address={address} />
 
-          <p style={{ marginTop: 20 }}>🚧 Dashboard coming soon…</p>
-        </div>
+        {/* 🔥 Dein Dashboard */}
+        <AppDashboard address={address} />
       </main>
     );
   }
@@ -73,6 +74,7 @@ export default function Home() {
       <BackgroundMatrix />
 
       <div style={styles.card}>
+        {/* Dein Logo */}
         <img
           src="/logo.png"
           style={{ width: 120, marginBottom: 10, borderRadius: 10 }}
