@@ -3,10 +3,8 @@
 import { useState } from "react";
 import { ethers } from "ethers";
 
+import AppDashboard from "./components/AppDashboard";
 import BackgroundMatrix from "./components/BackgroundMatrix";
-// Wenn du sie später nutzt kannst du sie reinnehmen:
-// import AppHeader from "./components/AppHeader";
-// import AppDashboard from "./components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -50,8 +48,10 @@ export default function Home() {
 
   return (
     <main style={styles.page}>
+      {/* MATRIX BACKGROUND */}
       <BackgroundMatrix />
 
+      {/* CONTENT */}
       <div style={styles.centerBox}>
         <h1 style={styles.title}>DropSignal</h1>
         <p style={styles.sub}>Deposit • Earn • Signal</p>
@@ -65,11 +65,7 @@ export default function Home() {
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         ) : (
-          <div style={styles.connected}>
-            Connected:
-            <br />
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </div>
+          <AppDashboard address={address} />
         )}
       </div>
     </main>
@@ -116,14 +112,5 @@ const styles = {
     fontSize: 16,
     cursor: "pointer",
     opacity: loading ? 0.6 : 1
-  }),
-
-  connected: {
-    marginTop: 20,
-    padding: 14,
-    borderRadius: 12,
-    background: "rgba(255,255,255,0.15)",
-    border: "1px solid rgba(255,255,255,0.3)",
-    textAlign: "center"
-  }
+  })
 };
