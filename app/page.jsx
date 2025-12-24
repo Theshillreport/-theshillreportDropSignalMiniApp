@@ -3,7 +3,6 @@
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
 
-// ❗ GANZ WICHTIG: Diese drei Dateien müssen existieren in /app/components
 import BackgroundMatrix from "./components/BackgroundMatrix";
 import AppHeader from "./components/AppHeader";
 import AppDashboard from "./components/AppDashboard";
@@ -12,20 +11,15 @@ export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // 🔗 Referral speichern
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
-    if (ref) {
-      localStorage.setItem("dropsignal_ref", ref);
-    }
+    if (ref) localStorage.setItem("dropsignal_ref", ref);
   }, []);
 
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
-
     try {
       setLoading(true);
 
@@ -34,8 +28,8 @@ export default function Home() {
       );
 
       const wcProvider = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0", // deine Project ID
-        chains: [8453], // Base Mainnet
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
+        chains: [8453],
         showQrModal: true,
       });
 
@@ -46,52 +40,36 @@ export default function Home() {
       const addr = await signer.getAddress();
 
       setAddress(addr);
-    } catch (e) {
-      console.error("Wallet Connect Error:", e);
+    } catch (err) {
+      console.error("Wallet Error =>", err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ========= Wenn Wallet verbunden =========
   if (address) {
     return (
       <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
         <BackgroundMatrix />
-
-        {/* 🔥 Deine App oben */}
         <AppHeader address={address} />
-
-        {/* 🔥 Dein Dashboard */}
         <AppDashboard address={address} />
       </main>
     );
   }
 
-  // ========= Login Screen =========
   return (
     <main style={styles.container}>
       <BackgroundMatrix />
 
       <div style={styles.card}>
-        {/* Dein Logo */}
-        <img
-          src="/logo.png"
-          style={{ width: 120, marginBottom: 10, borderRadius: 10 }}
-          alt="logo"
-        />
+        <img src="/logo.png" style={{ width: 120 }} />
 
         <h1 style={styles.logo}>DropSignal</h1>
-
         <p style={styles.tagline}>
           Deposit USDC • Supercharge Your Yield • Powered by Base
         </p>
 
-        <button
-          onClick={connectWallet}
-          disabled={loading}
-          style={styles.button}
-        >
+        <button onClick={connectWallet} disabled={loading} style={styles.button}>
           {loading ? "Connecting..." : "Connect Wallet"}
         </button>
       </div>
