@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
 import BackgroundMatrix from "./components/BackgroundMatrix";
@@ -14,8 +14,7 @@ export default function Home() {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const params = new URLSearchParams(window.location.search);
-    const ref = params.get("ref");
+    const ref = new URLSearchParams(window.location.search).get("ref");
     if (ref) localStorage.setItem("dropsignal_ref", ref);
   }, []);
 
@@ -41,7 +40,7 @@ export default function Home() {
 
       setAddress(addr);
     } catch (err) {
-      console.error("Wallet Error =>", err);
+      console.error(err);
     } finally {
       setLoading(false);
     }
@@ -49,7 +48,7 @@ export default function Home() {
 
   if (address) {
     return (
-      <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
+      <main style={{ minHeight: "100vh", color: "white" }}>
         <BackgroundMatrix />
         <AppHeader address={address} />
         <AppDashboard address={address} />
@@ -62,7 +61,7 @@ export default function Home() {
       <BackgroundMatrix />
 
       <div style={styles.card}>
-        <img src="/logo.png" style={{ width: 120 }} />
+        <img src="/logo.png" style={{ width: 120, marginBottom: 10 }} />
 
         <h1 style={styles.logo}>DropSignal</h1>
         <p style={styles.tagline}>
@@ -83,12 +82,11 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    background: "#050b1e",
     position: "relative",
     color: "white",
   },
   card: {
-    zIndex: 2,
+    zIndex: 3,
     background: "rgba(10,15,40,0.9)",
     padding: 40,
     borderRadius: 20,
