@@ -7,22 +7,14 @@ import BackgroundMatrix from "./components/BackgroundMatrix";
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("deposit");
 
-  // Fake Data – später ersetzen mit echten Smart Contracts
-  const balance = "0.00";
-  const apy = "5.24";
-  const available = "0.02";
-
-  // 🔗 Referral speichern
+  // Save referral
   useEffect(() => {
     if (typeof window === "undefined") return;
 
     const params = new URLSearchParams(window.location.search);
     const ref = params.get("ref");
-    if (ref) {
-      localStorage.setItem("dropsignal_ref", ref);
-    }
+    if (ref) localStorage.setItem("dropsignal_ref", ref);
   }, []);
 
   const connectWallet = async () => {
@@ -37,7 +29,7 @@ export default function Home() {
 
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453], 
+        chains: [8453],
         showQrModal: true,
       });
 
@@ -48,264 +40,153 @@ export default function Home() {
       const addr = await signer.getAddress();
 
       setAddress(addr);
-    } catch (e) {
-      console.error(e);
+    } catch (err) {
+      console.error(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ========= CONNECTED DASHBOARD =========
-  if (address) {
-    return (
-      <main style={styles.connected}>
-        <BackgroundMatrix />
+  // ========= CONNECTED UI =========
+  const walletUI = address ? (
+    <div style={styles.connectedBox}>
+      <h3 style={{ marginBottom: 6 }}>Connected Wallet</h3>
+      <p style={{ opacity: 0.9 }}>
+        {address}
+      </p>
+    </div>
+  ) : null;
 
-        {/* HEADER */}
-        <div style={styles.header}>
-          <div style={styles.logoWrap}>
-            <img src="/logo.png" style={{ width: 34, borderRadius: 8 }} />
-            <span style={styles.title}>DropSignal</span>
-          </div>
-
-          <div style={styles.walletBubble}>
-            {address.slice(0, 6)}...{address.slice(-4)}
-          </div>
-        </div>
-
-        {/* MAIN */}
-        <div style={styles.box}>
-          <h1 style={{ textAlign: "center" }}>DEPOSIT USDC TO EARN YIELD</h1>
-
-          <div style={styles.balanceBox}>
-            <p style={styles.sub}>YOUR BALANCE</p>
-            <h1>${balance}</h1>
-            <p style={styles.apy}>~ {apy}% APY</p>
-          </div>
-
-          {/* Boost Badges */}
-          <div style={styles.boostRow}>
-            <div style={styles.boost}>
-              🔒 Welcome Boost — 0.00%
-            </div>
-            <div style={styles.boost}>
-              🔒 Referral Boost — 0.00%
-            </div>
-          </div>
-
-          {/* TABS */}
-          <div style={styles.tabs}>
-            <button
-              onClick={() => setTab("deposit")}
-              style={tab === "deposit" ? styles.tabActive : styles.tab}
-            >
-              Deposit
-            </button>
-
-            <button
-              onClick={() => setTab("withdraw")}
-              style={tab === "withdraw" ? styles.tabActive : styles.tab}
-            >
-              Withdraw
-            </button>
-          </div>
-
-          {/* INPUT */}
-          <p style={{ marginTop: 10 }}>
-            Available: {available} USDC
-          </p>
-
-          <div style={styles.inputWrap}>
-            <input placeholder="0.00" style={styles.input} />
-            <span style={styles.token}>USDC</span>
-          </div>
-
-          <button style={styles.actionButton}>
-            {tab === "deposit" ? "Deposit" : "Withdraw"}
-          </button>
-
-        </div>
-      </main>
-    );
-  }
-
-  // ========= LOGIN SCREEN =========
   return (
-    <main style={styles.loginPage}>
+    <main style={styles.container}>
       <BackgroundMatrix />
 
-      <div style={styles.loginCard}>
-        <img
-          src="/logo.png"
-          style={{ width: 120, marginBottom: 10, borderRadius: 10 }}
-          alt="logo"
-        />
+      {/* HEADER */}
+      <div style={styles.header}>
+        <div style={styles.logoWrap}>
+          <img
+            src="/logo.png"
+            alt="logo"
+            style={{ width: 40, height: 40, borderRadius: 10 }}
+          />
+          <span style={styles.brand}>DropSignal</span>
+        </div>
 
-        <h1 style={styles.logoText}>DropSignal</h1>
+        {address && (
+          <div style={styles.addressBadge}>
+            {address.slice(0, 6)}...
+            {address.slice(-4)}
+          </div>
+        )}
+      </div>
+
+      {/* MAIN CARD */}
+      <div style={styles.card}>
+        <h1 style={styles.title}>Welcome to DropSignal</h1>
 
         <p style={styles.tagline}>
-          Deposit USDC • Supercharge Your Yield • Powered by Base
+          Deposit USDC • Earn Yield • Powered by Base
         </p>
 
-        <button
-          onClick={connectWallet}
-          disabled={loading}
-          style={styles.connectButton}
-        >
-          {loading ? "Connecting..." : "Connect Wallet"}
-        </button>
+        {/* CONNECT BUTTON ONLY IF NOT CONNECTED */}
+        {!address && (
+          <button
+            onClick={connectWallet}
+            disabled={loading}
+            style={styles.button}
+          >
+            {loading ? "Connecting..." : "Connect Wallet"}
+          </button>
+        )}
+
+        {/* WALLET BOX WHEN CONNECTED */}
+        {walletUI}
       </div>
     </main>
   );
 }
 
-// ======================== STYLES ========================
+// ===== STYLES =====
 const styles = {
-  loginPage: {
+  container: {
     minHeight: "100vh",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    background: "#050b1e",
-    position: "relative",
-    color: "white",
-  },
-
-  loginCard: {
-    zIndex: 2,
-    background: "rgba(10,15,40,0.9)",
-    padding: 40,
-    borderRadius: 20,
-    width: 360,
-    textAlign: "center",
-    border: "1px solid rgba(255,255,255,0.2)",
-  },
-
-  logoText: { fontSize: 32, fontWeight: 700 },
-  tagline: { opacity: 0.9, marginBottom: 30, fontSize: 14 },
-
-  connectButton: {
     width: "100%",
-    padding: 14,
-    borderRadius: 12,
-    border: "none",
-    background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
-    color: "white",
-    fontSize: 16,
-    cursor: "pointer",
-  },
-
-  connected: {
-    background: "#000",
-    minHeight: "100vh",
-    color: "white",
+    background: "#02050f",
+    overflow: "hidden",
     position: "relative",
+    color: "white",
   },
 
   header: {
-    padding: 20,
+    position: "absolute",
+    top: 20,
+    left: 20,
+    right: 20,
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
+    justifyContent: "space-between",
+    zIndex: 3,
   },
 
   logoWrap: {
     display: "flex",
-    gap: 10,
     alignItems: "center",
-    fontSize: 22,
+    gap: 10,
+  },
+
+  brand: {
+    fontSize: 24,
     fontWeight: 700,
   },
 
-  walletBubble: {
-    background: "rgba(255,255,255,0.15)",
+  addressBadge: {
     padding: "10px 16px",
-    borderRadius: 16,
-  },
-
-  title: { fontWeight: 700, fontSize: 24 },
-
-  box: {
-    background: "rgba(0,0,0,0.6)",
-    padding: 20,
-    margin: 20,
-    borderRadius: 20,
-  },
-
-  sub: { opacity: 0.7 },
-  apy: { opacity: 0.8 },
-
-  balanceBox: {
-    textAlign: "center",
-    marginTop: 10,
-    marginBottom: 20,
-  },
-
-  boostRow: {
-    display: "flex",
-    gap: 10,
-    marginBottom: 20,
-  },
-
-  boost: {
-    flex: 1,
-    background: "rgba(255,255,255,0.1)",
-    padding: 10,
-    borderRadius: 12,
-    textAlign: "center",
-  },
-
-  tabs: {
-    display: "flex",
-    gap: 10,
-    marginTop: 10,
-  },
-
-  tab: {
-    flex: 1,
-    padding: 12,
-    background: "rgba(255,255,255,0.1)",
-    borderRadius: 12,
-    border: "none",
-    color: "white",
-  },
-
-  tabActive: {
-    flex: 1,
-    padding: 12,
-    background: "white",
-    color: "black",
-    borderRadius: 12,
-    border: "none",
-  },
-
-  inputWrap: {
-    marginTop: 10,
-    background: "black",
     borderRadius: 14,
-    display: "flex",
-    alignItems: "center",
-    padding: 10,
+    background: "rgba(255,255,255,0.15)",
+    border: "1px solid rgba(255,255,255,0.3)",
   },
 
-  input: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    color: "white",
-    fontSize: 22,
-    outline: "none",
+  card: {
+    zIndex: 3,
+    marginTop: "25vh",
+    marginLeft: "auto",
+    marginRight: "auto",
+    width: 380,
+    background: "rgba(0,0,0,0.7)",
+    borderRadius: 20,
+    padding: 30,
+    textAlign: "center",
+    border: "1px solid rgba(255,255,255,0.2)",
   },
 
-  token: { opacity: 0.6 },
+  title: {
+    fontSize: 28,
+    fontWeight: 800,
+  },
 
-  actionButton: {
+  tagline: {
+    marginTop: 10,
+    opacity: 0.9,
+    fontSize: 14,
+    marginBottom: 25,
+  },
+
+  button: {
     width: "100%",
-    marginTop: 12,
     padding: 14,
+    fontSize: 16,
     borderRadius: 12,
     border: "none",
-    fontSize: 16,
+    cursor: "pointer",
     background: "linear-gradient(135deg,#ff9f1c,#38bdf8)",
+    color: "white",
+  },
+
+  connectedBox: {
+    marginTop: 20,
+    padding: 16,
+    borderRadius: 16,
+    background: "rgba(255,255,255,0.1)",
+    border: "1px solid rgba(255,255,255,0.3)",
   },
 };
