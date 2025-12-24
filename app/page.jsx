@@ -1,8 +1,12 @@
 "use client";
 
-import AppHeader from "./components/AppHeader";
-import AppDashboard from "./components/AppDashboard";
+import { useState } from "react";
+import { ethers } from "ethers";
+
 import BackgroundMatrix from "./components/BackgroundMatrix";
+// Wenn du sie später nutzt kannst du sie reinnehmen:
+// import AppHeader from "./components/AppHeader";
+// import AppDashboard from "./components/AppDashboard";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
@@ -14,7 +18,7 @@ export default function Home() {
     try {
       setLoading(true);
 
-      // ❗ verhindert Auto-Reconnect
+      // verhindert Auto-Reconnect
       if (typeof localStorage !== "undefined") {
         localStorage.removeItem("wc@2:client:session");
         localStorage.removeItem("wc@2:core:pairing");
@@ -46,10 +50,8 @@ export default function Home() {
 
   return (
     <main style={styles.page}>
-      {/* MATRIX BACKGROUND 🧠 */}
       <BackgroundMatrix />
 
-      {/* CONTENT */}
       <div style={styles.centerBox}>
         <h1 style={styles.title}>DropSignal</h1>
         <p style={styles.sub}>Deposit • Earn • Signal</p>
