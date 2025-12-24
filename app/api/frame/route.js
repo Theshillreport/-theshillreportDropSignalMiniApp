@@ -3,13 +3,17 @@ export async function GET() {
 `<!DOCTYPE html>
 <html>
   <head>
+    <meta charset="utf-8" />
+
     <meta property="og:title" content="Drop Signal Mini App" />
+    <meta property="og:description" content="Deposit USDC · Earn on Base" />
+    <meta property="og:type" content="website" />
     <meta property="og:image" content="https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg" />
 
     <!-- FRAME aktivieren -->
     <meta name="fc:frame" content="vNext" />
 
-    <!-- Bild im Frame -->
+    <!-- Bild -->
     <meta name="fc:frame:image" content="https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg" />
 
     <!-- BUTTON -->
@@ -21,7 +25,7 @@ export async function GET() {
 </html>`,
     {
       headers: {
-        "Content-Type": "text/html",
+        "Content-Type": "text/html; charset=utf-8",
         "Cache-Control": "no-store",
       },
     }
