@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { ethers } from "ethers";
 import AppDashboard from "../components/AppDashboard";
+import BackgroundMatrix from "../components/BackgroundMatrix";
+import AppHeader from "../components/AppHeader";
 import BackgroundMatrix from "../components/BackgroundMatrix";
 import AppHeader from "../components/AppHeader";
 
