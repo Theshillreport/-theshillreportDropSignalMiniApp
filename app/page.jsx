@@ -53,16 +53,23 @@ export default function Home() {
   };
 
   // ========= Wenn Wallet verbunden =========
-  if (address) {
-    return (
-      <main style={{ background: "#050b1e", minHeight: "100vh" }}>
-        <BackgroundMatrix />
-        <AppHeader address={address} />
-        <AppDashboard address={address} />
-      </main>
-    );
-  }
+if (address) {
+  return (
+    <main style={{ background: "#050b1e", minHeight: "100vh", color: "white" }}>
+      <BackgroundMatrix />
 
+      <div style={{ padding: 40 }}>
+        <h1>Wallet Connected ✅</h1>
+        <p>Your address:</p>
+        <p style={{ opacity: 0.8 }}>{address}</p>
+
+        <p style={{ marginTop: 20 }}>
+          🚧 Dashboard coming soon…
+        </p>
+      </div>
+    </main>
+  );
+}
   // ========= Login Screen =========
   return (
     <main style={styles.container}>
