@@ -1,37 +1,40 @@
 "use client";
-
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 export default function BackgroundMatrix() {
+  const canvasRef = useRef(null);
+
   useEffect(() => {
-    const canvas = document.getElementById("matrix");
+    const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
 
-    canvas.height = window.innerHeight;
     canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-    const chars = "0123456789ΞBASEUSDC010101";
-    const fontSize = 14;
-    const columns = canvas.width / fontSize;
-    const drops = Array(Math.floor(columns)).fill(1);
+    const letters = "0123456789ABCDEFUSDCBASEYIELD";
+    const columns = canvas.width / 20;
+    const drops = Array.from({ length: columns }, () => 1);
 
-    const draw = () => {
-      ctx.fillStyle = "rgba(0,0,0,0.08)";
+    function draw() {
+      ctx.fillStyle = "rgba(0,0,0,0.1)";
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      ctx.fillStyle = "#38bdf8";
-      ctx.font = fontSize + "px monospace";
+      ctx.fillStyle = "#00c8ff";
+      ctx.font = "18px monospace";
 
-      drops.forEach((y, i) => {
-        const text = chars.charAt(Math.floor(Math.random() * chars.length));
-        ctx.fillText(text, i * fontSize, y * fontSize);
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters.charAt(
+          Math.floor(Math.random() * letters.length)
+        );
+        ctx.fillText(text, i * 20, drops[i] * 20);
 
-        if (y * fontSize > canvas.height && Math.random() > 0.975) {
+        if (drops[i] * 20 > canvas.height && Math.random() > 0.95) {
           drops[i] = 0;
         }
+
         drops[i]++;
-      });
-    };
+      }
+    }
 
     const interval = setInterval(draw, 35);
     return () => clearInterval(interval);
@@ -39,12 +42,14 @@ export default function BackgroundMatrix() {
 
   return (
     <canvas
-      id="matrix"
+      ref={canvasRef}
       style={{
         position: "fixed",
-        inset: 0,
-        zIndex: 1,
-        background: "#050b1e"
+        top: 0,
+        left: 0,
+        width: "100vw",
+        height: "100vh",
+        zIndex: 0
       }}
     />
   );
