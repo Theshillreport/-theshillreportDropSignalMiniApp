@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { ethers } from "ethers";
+import AppHeader from "./components/AppHeader";
+import AppDashboard from "./components/AppDashboard";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
 export default function Home() {
