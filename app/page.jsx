@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { ethers } from "ethers";
-import BackgroundMatrix from "../components/BackgroundMatrix";
+import BackgroundMatrix from "./components/BackgroundMatrix";
 
 export default function Home() {
   const [address, setAddress] = useState(null);
