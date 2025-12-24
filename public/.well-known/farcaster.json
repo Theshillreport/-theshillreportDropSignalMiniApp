@@ -1,5 +1,12 @@
 {
+  "version": "1.0.0",
   "name": "Drop Signal",
-  "url": "https://theshillreport-drop-signal-mini-app.vercel.app",
-  "iconUrl": "https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg"
+  "icon": "https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg",
+  "splash_image_url": "https://theshillreport-drop-signal-mini-app.vercel.app/IMG_2667.jpeg",
+  "splash_background_color": "#000000",
+  "theme": "dark",
+  "description": "Drop Signal Mini App",
+  "action": {
+    "type": "launch"
+  }
 }
