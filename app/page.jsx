@@ -4,181 +4,134 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
-// ===== AAVE + USDC ON BASE =====
-const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
-const AAVE_POOL = "0x6Ae63C4E349A8675D8aC49f37b51f72dF6bD29c1";
-
-const ERC20_ABI = [
-  "function approve(address spender,uint256 value) external returns(bool)",
-  "function allowance(address owner,address spender) view returns(uint256)",
-  "function balanceOf(address owner) view returns(uint256)",
-  "function decimals() view returns(uint8)"
-];
-
-const AAVE_ABI = [
-  "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode)",
-  "function withdraw(address asset,uint256 amount,address to)",
-  "function getReserveData(address asset) view returns((uint256 configuration,uint128 liquidityIndex,uint128 currentLiquidityRate,uint128 variableBorrowIndex,uint128 currentVariableBorrowRate,uint128 currentStableBorrowRate,uint40 lastUpdateTimestamp,address aTokenAddress,uint8 id))"
-];
-
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // UI States
+  const [ready, setReady] = useState(false);
   const [balance, setBalance] = useState(0);
   const [earnings, setEarnings] = useState(0);
-  const [apy, setApy] = useState(0);
-  const [amount, setAmount] = useState("");
+  const [apy] = useState(12);
 
-  // 🔥 LIVE EARNINGS
+  // 🧠 Fix: WalletConnect Auto Reconnect verhindern
   useEffect(() => {
-    if (!address || balance === 0 || apy === 0) return;
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem("wc@2:client:session");
+        localStorage.removeItem("wc@2:core:pairing");
+      } catch (_) {}
+    }
+    setReady(true);
+  }, []);
 
-    const rate = (apy / 100) / 365 / 24 / 3600; 
+  // 🔥 Fake earning counter (bis echte Blockchain live ist)
+  useEffect(() => {
+    if (!address) return;
     const interval = setInterval(() => {
-      setEarnings(e => e + balance * rate);
+      setEarnings((e) => e + 0.00001);
     }, 1000);
-
     return () => clearInterval(interval);
-  }, [address, balance, apy]);
+  }, [address]);
 
   const connectWallet = async () => {
+    if (typeof window === "undefined") return;
+
     try {
       setLoading(true);
 
-      if (typeof localStorage !== "undefined") {
-        localStorage.removeItem("wc@2:client:session");
-        localStorage.removeItem("wc@2:core:pairing");
-      }
+      const { EthereumProvider } = await import(
+        "@walletconnect/ethereum-provider"
+      );
 
-      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
-
-      const wc = await EthereumProvider.init({
+      const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453],
+        chains: [8453],   // BASE chain ID
         showQrModal: true
       });
 
-      await wc.connect();
+      await wcProvider.connect();
 
-      const provider = new ethers.BrowserProvider(wc);
+      const provider = new ethers.BrowserProvider(wcProvider);
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
 
       setAddress(addr);
-      loadAaveData(provider, addr);
-
     } catch (err) {
-      console.error(err);
+      console.error("Connect error:", err);
     } finally {
       setLoading(false);
     }
   };
 
-  const loadAaveData = async (provider, addr) => {
-    const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, provider);
-    const data = await pool.getReserveData(USDC);
-
-    // APY from liquidity rate
-    const liquidityRate = Number(data.currentLiquidityRate) / 1e27;
-    setApy((liquidityRate * 100).toFixed(2));
-  };
-
-  const deposit = async () => {
-    try {
-      if (!amount) return alert("Enter amount");
-
-      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
-      const signer = await provider.getSigner();
-
-      const token = new ethers.Contract(USDC, ERC20_ABI, signer);
-      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
-
-      const decimals = await token.decimals();
-      const value = ethers.parseUnits(amount, decimals);
-
-      await token.approve(AAVE_POOL, value);
-      await pool.supply(USDC, value, address, 0);
-
-      setBalance(prev => prev + Number(amount));
-      alert("Deposit Successful!");
-    } catch (e) {
-      console.log(e);
-      alert("Deposit failed");
-    }
-  };
-
-  const withdraw = async () => {
-    try {
-      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
-      const signer = await provider.getSigner();
-
-      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
-
-      await pool.withdraw(USDC, ethers.MaxUint256, address);
-      setBalance(0);
-      setEarnings(0);
-      alert("Withdraw Successful!");
-    } catch (e) {
-      console.log(e);
-      alert("Withdraw failed");
-    }
-  };
+  // ⛔️ Render nicht bevor Fix aktiv
+  if (!ready) return null;
 
   return (
     <main style={styles.page}>
       <BackgroundMatrix />
 
-      {/* HEADER */}
-      <div style={styles.header}>
-        <div style={styles.logoWrap}>
-          <img src="/logo.png" style={styles.logoImg} />
-          <span style={styles.logoText}>DropSignal</span>
-        </div>
-
-        {address && (
-          <div style={styles.profile}>
-            {address.slice(0,6)}...{address.slice(-4)}
-          </div>
-        )}
-      </div>
-
+      {/* ================= NOT CONNECTED ================= */}
       {!address ? (
-        <div style={styles.center}>
-          <h1 style={styles.big}>Earn Real Yield on Base</h1>
+        <div style={styles.centerBox}>
+          <img
+            src="/logo.png"
+            alt="logo"
+            style={{ width: 95, height: 95, borderRadius: "50%", marginBottom: 10 }}
+          />
 
-          <button onClick={connectWallet} disabled={loading} style={styles.connectBtn}>
+          <h1 style={styles.logo}>DropSignal</h1>
+          <p style={styles.sub}>Deposit • Earn • Signal</p>
+
+          <button
+            onClick={connectWallet}
+            disabled={loading}
+            style={styles.connectButton(loading)}
+          >
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         </div>
       ) : (
-        <div style={styles.dashboard}>
-          <div style={styles.card}>
-            <p>Deposited</p>
-            <h2>{balance.toFixed(2)} USDC</h2>
+        /* ================= DASHBOARD ================= */
+        <div style={styles.dashboardWrap}>
+          {/* Header */}
+          <div style={styles.topBar}>
+            <div style={styles.leftHead}>
+              <img
+                src="/logo.png"
+                style={{ width: 45, height: 45, borderRadius: "50%" }}
+              />
+              <span style={{ marginLeft: 10, fontWeight: 900 }}>DropSignal</span>
+            </div>
+
+            <div style={styles.profile}>
+              {address.slice(0, 4)}...{address.slice(-4)}
+            </div>
           </div>
 
           <div style={styles.card}>
-            <p>Live Earnings</p>
-            <h2>+{earnings.toFixed(6)} USDC</h2>
+            <p>Total Deposited:</p>
+            <h3>{balance.toFixed(2)} USDC</h3>
           </div>
 
           <div style={styles.card}>
-            <p>APY</p>
-            <h2>{apy}%</h2>
+            <p>Live Earnings:</p>
+            <h3>+{earnings.toFixed(6)} USDC</h3>
           </div>
 
-          <input
-            value={amount}
-            onChange={(e)=>setAmount(e.target.value)}
-            placeholder="Amount USDC"
-            style={styles.input}
-          />
+          <div style={styles.card}>
+            <p>APY:</p>
+            <h3>{apy}%</h3>
+          </div>
 
-          <div style={styles.row}>
-            <button style={styles.deposit} onClick={deposit}>Deposit</button>
-            <button style={styles.withdraw} onClick={withdraw}>Withdraw</button>
+          <div style={styles.buttonRow}>
+            <button style={styles.depositBtn}>
+              Deposit USDC
+            </button>
+
+            <button style={styles.withdrawBtn}>
+              Withdraw
+            </button>
           </div>
         </div>
       )}
@@ -186,88 +139,109 @@ export default function Home() {
   );
 }
 
+// ===================== STYLES =====================
 const styles = {
-  page:{
-    minHeight:"100vh",
-    position:"relative",
-    background:"#ff7a00",
-    color:"white"
+  page: {
+    minHeight: "100vh",
+    width: "100%",
+    position: "relative",
+    overflow: "hidden",
+    color: "white",
+    background: "#000"
   },
-  header:{
-    position:"fixed",
-    top:10,
-    left:10,
-    right:10,
-    zIndex:10,
-    display:"flex",
-    justifyContent:"space-between",
-    alignItems:"center"
+
+  centerBox: {
+    position: "relative",
+    zIndex: 5,
+    minHeight: "100vh",
+    display: "flex",
+    flexDirection: "column",
+    justifyContent: "center",
+    alignItems: "center"
   },
-  logoWrap:{display:"flex",alignItems:"center",gap:8},
-  logoImg:{width:42,height:42,borderRadius:"50%"},
-  logoText:{fontSize:18,fontWeight:900},
-  profile:{
-    background:"rgba(0,0,0,0.5)",
-    padding:"8px 12px",
-    borderRadius:12,
-    border:"1px solid white"
+
+  logo: {
+    fontSize: 40,
+    fontWeight: "900",
+    letterSpacing: 1
   },
-  center:{
-    zIndex:5,
-    minHeight:"100vh",
-    display:"flex",
-    flexDirection:"column",
-    justifyContent:"center",
-    alignItems:"center"
+
+  sub: {
+    opacity: 0.8,
+    marginBottom: 20
   },
-  big:{fontSize:30,fontWeight:900,marginBottom:20},
-  connectBtn:{
-    padding:"14px 28px",
-    borderRadius:14,
-    background:"black",
-    color:"white",
-    border:"none",
-    fontSize:18
+
+  connectButton: (loading) => ({
+    padding: "14px 30px",
+    borderRadius: 12,
+    border: "none",
+    fontSize: 18,
+    cursor: "pointer",
+    background: "linear-gradient(135deg,#ffa200,#ff6a00)",
+    opacity: loading ? 0.6 : 1
+  }),
+
+  dashboardWrap: {
+    position: "relative",
+    zIndex: 5,
+    minHeight: "100vh",
+    paddingTop: 20,
+    textAlign: "center"
   },
-  dashboard:{
-    paddingTop:120,
-    textAlign:"center"
+
+  topBar: {
+    width: "90%",
+    margin: "0 auto 20px auto",
+    display: "flex",
+    justifyContent: "space-between",
+    alignItems: "center"
   },
-  card:{
-    margin:"12px auto",
-    width:"85%",
-    background:"rgba(0,0,0,0.4)",
-    padding:18,
-    borderRadius:16,
-    border:"1px solid white"
+
+  leftHead: {
+    display: "flex",
+    alignItems: "center",
   },
-  input:{
-    width:"80%",
-    padding:12,
-    borderRadius:12,
-    border:"none",
-    marginTop:15
+
+  profile: {
+    padding: "8px 12px",
+    borderRadius: 12,
+    border: "1px solid rgba(255,255,255,0.6)"
   },
-  row:{
-    display:"flex",
-    justifyContent:"center",
-    gap:10,
-    marginTop:18
+
+  card: {
+    background: "rgba(0,0,0,0.6)",
+    borderRadius: 18,
+    padding: 20,
+    margin: "15px auto",
+    width: "85%",
+    border: "1px solid rgba(255,255,255,0.2)",
+    backdropFilter: "blur(4px)"
   },
-  deposit:{
-    background:"lime",
-    padding:"12px 20px",
-    borderRadius:12,
-    border:"none",
-    color:"black",
-    fontWeight:900
+
+  buttonRow: {
+    marginTop: 25,
+    display: "flex",
+    justifyContent: "center",
+    gap: 12
   },
-  withdraw:{
-    background:"red",
-    padding:"12px 20px",
-    borderRadius:12,
-    border:"none",
-    color:"white",
-    fontWeight:900
+
+  depositBtn: {
+    padding: "14px 22px",
+    borderRadius: 14,
+    border: "none",
+    background: "#00ff9c",
+    color: "#000",
+    fontWeight: 700,
+    cursor: "pointer"
+  },
+
+  withdrawBtn: {
+    padding: "14px 22px",
+    borderRadius: 14,
+    border: "none",
+    background: "#ff3b3b",
+    color: "#fff",
+    fontWeight: 700,
+    cursor: "pointer"
   }
 };
