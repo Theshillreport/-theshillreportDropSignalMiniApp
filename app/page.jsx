@@ -15,14 +15,17 @@ export default function Home() {
   const [tab, setTab] = useState("deposit");
   const [amount, setAmount] = useState("");
 
-  // Fake earnings counter until real DeFi integration
+  // Fake earnings counter for now
   useEffect(() => {
     if (!address) return;
+
     const int = setInterval(() => {
       setEarnings((e) => e + 0.00001);
     }, 1000);
+
     return () => clearInterval(int);
   }, [address]);
+
 
   const connectWallet = async () => {
     if (typeof window === "undefined") return;
@@ -42,7 +45,7 @@ export default function Home() {
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [1],
-        showQrModal: true,
+        showQrModal: true
       });
 
       await wcProvider.connect();
@@ -50,13 +53,15 @@ export default function Home() {
       const provider = new ethers.BrowserProvider(wcProvider);
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
+
       setAddress(addr);
-    } catch (e) {
-      console.log(e);
+    } catch (err) {
+      console.error("Connect error:", err);
     } finally {
       setLoading(false);
     }
   };
+
 
   return (
     <main style={styles.page}>
@@ -77,8 +82,8 @@ export default function Home() {
         </div>
       ) : (
         <div style={styles.dashboardWrap}>
-          
-          {/* HEADER LIKE X-QUO */}
+
+          {/* HEADER */}
           <div style={styles.topBar}>
             <div style={styles.brand}>
               <div style={styles.logoCircle}>D</div>
@@ -94,14 +99,12 @@ export default function Home() {
           <div style={styles.bigCard}>
             <p style={styles.headingText}>DEPOSIT USDC TO EARN YIELD</p>
 
-            <h2 style={styles.balance}>
-              ${balance.toFixed(2)}
-            </h2>
+            <h2 style={styles.balance}>${balance.toFixed(2)}</h2>
 
             <p style={styles.apyText}>{apy}% APY</p>
           </div>
 
-          {/* BOOSTS BOX LIKE X-QUO */}
+          {/* BOOSTS */}
           <div style={styles.boostBox}>
             <div style={styles.boostItem}>
               <span>WELCOME BOOST</span>
@@ -131,11 +134,9 @@ export default function Home() {
             </button>
           </div>
 
-          {/* INPUT BOX */}
+          {/* INPUT */}
           <div style={styles.inputBox}>
-            <p style={{ opacity: 0.7 }}>
-              Available: 0.00 USDC
-            </p>
+            <p style={{ opacity: 0.7 }}>Available: 0.00 USDC</p>
 
             <input
               style={styles.input}
@@ -161,8 +162,14 @@ const styles = {
   centerBox:{zIndex:5,minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"},
   logo:{fontSize:40,fontWeight:900},
   sub:{opacity:.8,marginBottom:20},
-  connectButton:(loading)=>({padding:"14px 30px",borderRadius:12,border:"none",fontSize:18,cursor:"pointer",
-    background:"linear-gradient(135deg,#00ffa6,#00b4ff)",opacity:loading?.6:1
+  connectButton:(loading)=>({
+    padding:"14px 30px",
+    borderRadius:12,
+    border:"none",
+    fontSize:18,
+    cursor:"pointer",
+    background:"linear-gradient(135deg,#00ffa6,#00b4ff)",
+    opacity: loading ? 0.6 : 1
   }),
 
   dashboardWrap:{zIndex:5,position:"relative",padding:"25px 10px"},
@@ -178,7 +185,7 @@ const styles = {
 
   boostBox:{display:"flex",justifyContent:"space-between",gap:10,marginTop:20},
   boostItem:{flex:1,background:"rgba(0,0,0,.6)",borderRadius:14,padding:15,border:"1px solid rgba(255,255,255,.2)",
-    display:"flex",flexDirection:"column",alignItems:"center",gap:6},
+  display:"flex",flexDirection:"column",alignItems:"center",gap:6},
 
   tabs:{marginTop:25,display:"flex",gap:10,justifyContent:"center"},
   tab:{padding:"10px 20px",borderRadius:20,border:"1px solid rgba(255,255,255,.4)",background:"transparent",color:"#fff"},
