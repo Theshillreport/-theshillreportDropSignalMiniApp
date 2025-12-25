@@ -8,18 +8,20 @@ export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // UI States
   const [balance, setBalance] = useState(0);
   const [earnings, setEarnings] = useState(0);
-  const [apy] = useState(12);
+  const [apy, setApy] = useState(12);
 
-  // 🔥 Fake earning counter (until blockchain is ready)
+  const [tab, setTab] = useState("deposit");
+  const [amount, setAmount] = useState("");
+
+  // Fake earnings counter until real DeFi integration
   useEffect(() => {
     if (!address) return;
-    const interval = setInterval(() => {
+    const int = setInterval(() => {
       setEarnings((e) => e + 0.00001);
     }, 1000);
-    return () => clearInterval(interval);
+    return () => clearInterval(int);
   }, [address]);
 
   const connectWallet = async () => {
@@ -40,7 +42,7 @@ export default function Home() {
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [1],
-        showQrModal: true
+        showQrModal: true,
       });
 
       await wcProvider.connect();
@@ -48,10 +50,9 @@ export default function Home() {
       const provider = new ethers.BrowserProvider(wcProvider);
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
-
       setAddress(addr);
-    } catch (err) {
-      console.error("Connect error:", err);
+    } catch (e) {
+      console.log(e);
     } finally {
       setLoading(false);
     }
@@ -76,33 +77,75 @@ export default function Home() {
         </div>
       ) : (
         <div style={styles.dashboardWrap}>
-          <h2 style={styles.title}>Dashboard</h2>
-          <p style={styles.connected}>
-            Connected: {address.slice(0, 6)}...{address.slice(-4)}
-          </p>
+          
+          {/* HEADER LIKE X-QUO */}
+          <div style={styles.topBar}>
+            <div style={styles.brand}>
+              <div style={styles.logoCircle}>D</div>
+              <span>DropSignal</span>
+            </div>
 
-          <div style={styles.card}>
-            <p>Total Deposited:</p>
-            <h3>{balance.toFixed(2)} USDC</h3>
+            <div style={styles.walletTag}>
+              {address.slice(0, 6)}...{address.slice(-4)}
+            </div>
           </div>
 
-          <div style={styles.card}>
-            <p>Live Earnings:</p>
-            <h3>+{earnings.toFixed(6)} USDC</h3>
+          {/* MAIN CARD */}
+          <div style={styles.bigCard}>
+            <p style={styles.headingText}>DEPOSIT USDC TO EARN YIELD</p>
+
+            <h2 style={styles.balance}>
+              ${balance.toFixed(2)}
+            </h2>
+
+            <p style={styles.apyText}>{apy}% APY</p>
           </div>
 
-          <div style={styles.card}>
-            <p>APY:</p>
-            <h3>{apy}%</h3>
+          {/* BOOSTS BOX LIKE X-QUO */}
+          <div style={styles.boostBox}>
+            <div style={styles.boostItem}>
+              <span>WELCOME BOOST</span>
+              <strong>+0.00%</strong>
+            </div>
+
+            <div style={styles.boostItem}>
+              <span>REFERRAL BOOST</span>
+              <strong>+0.00%</strong>
+            </div>
           </div>
 
-          <div style={styles.buttonRow}>
-            <button style={styles.depositBtn}>
-              Deposit USDC
+          {/* TABS */}
+          <div style={styles.tabs}>
+            <button
+              onClick={() => setTab("deposit")}
+              style={tab === "deposit" ? styles.tabActive : styles.tab}
+            >
+              Deposit
             </button>
 
-            <button style={styles.withdrawBtn}>
+            <button
+              onClick={() => setTab("withdraw")}
+              style={tab === "withdraw" ? styles.tabActive : styles.tab}
+            >
               Withdraw
+            </button>
+          </div>
+
+          {/* INPUT BOX */}
+          <div style={styles.inputBox}>
+            <p style={{ opacity: 0.7 }}>
+              Available: 0.00 USDC
+            </p>
+
+            <input
+              style={styles.input}
+              value={amount}
+              onChange={(e) => setAmount(e.target.value)}
+              placeholder="0.00"
+            />
+
+            <button style={styles.actionBtn}>
+              {tab === "deposit" ? "Deposit USDC" : "Withdraw USDC"}
             </button>
           </div>
         </div>
@@ -111,99 +154,37 @@ export default function Home() {
   );
 }
 
+
 // ===================== STYLES =====================
 const styles = {
-  page: {
-    minHeight: "100vh",
-    width: "100%",
-    position: "relative",
-    overflow: "hidden",
-    color: "white",
-    background: "#000"
-  },
-
-  centerBox: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
-  },
-
-  logo: {
-    fontSize: 40,
-    fontWeight: "900",
-    letterSpacing: 1
-  },
-
-  sub: {
-    opacity: 0.8,
-    marginBottom: 20
-  },
-
-  connectButton: (loading) => ({
-    padding: "14px 30px",
-    borderRadius: 12,
-    border: "none",
-    fontSize: 18,
-    cursor: "pointer",
-    background: "linear-gradient(135deg,#00ffa6,#00b4ff)",
-    opacity: loading ? 0.6 : 1
+  page:{minHeight:"100vh",width:"100%",background:"#000",color:"#fff",position:"relative"},
+  centerBox:{zIndex:5,minHeight:"100vh",display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center"},
+  logo:{fontSize:40,fontWeight:900},
+  sub:{opacity:.8,marginBottom:20},
+  connectButton:(loading)=>({padding:"14px 30px",borderRadius:12,border:"none",fontSize:18,cursor:"pointer",
+    background:"linear-gradient(135deg,#00ffa6,#00b4ff)",opacity:loading?.6:1
   }),
 
-  dashboardWrap: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
-    paddingTop: 50,
-    textAlign: "center"
-  },
+  dashboardWrap:{zIndex:5,position:"relative",padding:"25px 10px"},
+  topBar:{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:20},
+  brand:{display:"flex",alignItems:"center",gap:8,fontWeight:800,fontSize:18},
+  logoCircle:{width:36,height:36,borderRadius:"50%",background:"#00ffa6",display:"flex",justifyContent:"center",alignItems:"center",color:"#000",fontWeight:900},
+  walletTag:{padding:"8px 14px",borderRadius:50,border:"1px solid rgba(255,255,255,.4)"},
 
-  title: {
-    fontSize: 34,
-    marginBottom: 10
-  },
+  bigCard:{borderRadius:20,border:"1px solid rgba(255,255,255,.2)",padding:25,background:"rgba(0,0,0,.5)",backdropFilter:"blur(6px)"},
+  headingText:{opacity:.8,letterSpacing:1},
+  balance:{fontSize:40,margin:"10px 0"},
+  apyText:{color:"#00ffa6",fontSize:22},
 
-  connected: {
-    opacity: 0.7,
-    marginBottom: 25
-  },
+  boostBox:{display:"flex",justifyContent:"space-between",gap:10,marginTop:20},
+  boostItem:{flex:1,background:"rgba(0,0,0,.6)",borderRadius:14,padding:15,border:"1px solid rgba(255,255,255,.2)",
+    display:"flex",flexDirection:"column",alignItems:"center",gap:6},
 
-  card: {
-    background: "rgba(0,0,0,0.6)",
-    borderRadius: 18,
-    padding: 20,
-    margin: "15px auto",
-    width: "85%",
-    border: "1px solid rgba(255,255,255,0.2)",
-    backdropFilter: "blur(4px)"
-  },
+  tabs:{marginTop:25,display:"flex",gap:10,justifyContent:"center"},
+  tab:{padding:"10px 20px",borderRadius:20,border:"1px solid rgba(255,255,255,.4)",background:"transparent",color:"#fff"},
+  tabActive:{padding:"10px 20px",borderRadius:20,border:"none",background:"#fff",color:"#000",fontWeight:800},
 
-  buttonRow: {
-    marginTop: 25,
-    display: "flex",
-    justifyContent: "center",
-    gap: 12
-  },
-
-  depositBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "none",
-    background: "#00ff9c",
-    color: "#000",
-    fontWeight: 700,
-    cursor: "pointer"
-  },
-
-  withdrawBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "1px solid white",
-    background: "transparent",
-    color: "white",
-    cursor: "pointer"
-  }
+  inputBox:{marginTop:20,background:"rgba(0,0,0,.6)",padding:20,borderRadius:18,border:"1px solid rgba(255,255,255,.2)"},
+  input:{width:"100%",padding:15,fontSize:22,borderRadius:10,border:"none",marginTop:10,marginBottom:15},
+  actionBtn:{width:"100%",padding:16,borderRadius:14,border:"none",background:"#00ffa6",color:"#000",fontWeight:900,fontSize:18}
 };
