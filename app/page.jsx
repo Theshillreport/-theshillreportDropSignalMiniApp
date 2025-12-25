@@ -4,57 +4,125 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
+// ===== AAVE + USDC ON BASE =====
+const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const AAVE_POOL = "0x6Ae63C4E349A8675D8aC49f37b51f72dF6bD29c1";
+
+const ERC20_ABI = [
+  "function approve(address spender,uint256 value) external returns(bool)",
+  "function allowance(address owner,address spender) view returns(uint256)",
+  "function balanceOf(address owner) view returns(uint256)",
+  "function decimals() view returns(uint8)"
+];
+
+const AAVE_ABI = [
+  "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode)",
+  "function withdraw(address asset,uint256 amount,address to)",
+  "function getReserveData(address asset) view returns((uint256 configuration,uint128 liquidityIndex,uint128 currentLiquidityRate,uint128 variableBorrowIndex,uint128 currentVariableBorrowRate,uint128 currentStableBorrowRate,uint40 lastUpdateTimestamp,address aTokenAddress,uint8 id))"
+];
+
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Dashboard States
+  // UI States
   const [balance, setBalance] = useState(0);
   const [earnings, setEarnings] = useState(0);
-  const [apy, setAPY] = useState(0);
+  const [apy, setApy] = useState(0);
+  const [amount, setAmount] = useState("");
 
-  // ⛓️ Base Chain ID
-  const BASE_CHAIN_ID = 8453;
+  // 🔥 LIVE EARNINGS
+  useEffect(() => {
+    if (!address || balance === 0 || apy === 0) return;
 
-  // 🟢 Wallet Connect
+    const rate = (apy / 100) / 365 / 24 / 3600; 
+    const interval = setInterval(() => {
+      setEarnings(e => e + balance * rate);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [address, balance, apy]);
+
   const connectWallet = async () => {
     try {
       setLoading(true);
-
-      if (typeof window === "undefined") return;
 
       if (typeof localStorage !== "undefined") {
         localStorage.removeItem("wc@2:client:session");
         localStorage.removeItem("wc@2:core:pairing");
       }
 
-      const { EthereumProvider } = await import(
-        "@walletconnect/ethereum-provider"
-      );
+      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
 
-      const wcProvider = await EthereumProvider.init({
+      const wc = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [BASE_CHAIN_ID],
+        chains: [8453],
         showQrModal: true
       });
 
-      await wcProvider.connect();
+      await wc.connect();
 
-      const provider = new ethers.BrowserProvider(wcProvider);
+      const provider = new ethers.BrowserProvider(wc);
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
 
       setAddress(addr);
-
-      // reset dashboard
-      setBalance(0);
-      setEarnings(0);
-      setAPY(0);
+      loadAaveData(provider, addr);
 
     } catch (err) {
-      console.log("Wallet Connect Failed:", err);
+      console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadAaveData = async (provider, addr) => {
+    const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, provider);
+    const data = await pool.getReserveData(USDC);
+
+    // APY from liquidity rate
+    const liquidityRate = Number(data.currentLiquidityRate) / 1e27;
+    setApy((liquidityRate * 100).toFixed(2));
+  };
+
+  const deposit = async () => {
+    try {
+      if (!amount) return alert("Enter amount");
+
+      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
+      const signer = await provider.getSigner();
+
+      const token = new ethers.Contract(USDC, ERC20_ABI, signer);
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
+
+      const decimals = await token.decimals();
+      const value = ethers.parseUnits(amount, decimals);
+
+      await token.approve(AAVE_POOL, value);
+      await pool.supply(USDC, value, address, 0);
+
+      setBalance(prev => prev + Number(amount));
+      alert("Deposit Successful!");
+    } catch (e) {
+      console.log(e);
+      alert("Deposit failed");
+    }
+  };
+
+  const withdraw = async () => {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
+      const signer = await provider.getSigner();
+
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
+
+      await pool.withdraw(USDC, ethers.MaxUint256, address);
+      setBalance(0);
+      setEarnings(0);
+      alert("Withdraw Successful!");
+    } catch (e) {
+      console.log(e);
+      alert("Withdraw failed");
     }
   };
 
@@ -62,64 +130,55 @@ export default function Home() {
     <main style={styles.page}>
       <BackgroundMatrix />
 
-      {/* ================= BEFORE CONNECT ================= */}
-      {!address && (
-        <div style={styles.centerBox}>
-          <h1 style={styles.logo}>DropSignal</h1>
-          <p style={styles.sub}>Deposit • Earn • Signal</p>
+      {/* HEADER */}
+      <div style={styles.header}>
+        <div style={styles.logoWrap}>
+          <img src="/logo.png" style={styles.logoImg} />
+          <span style={styles.logoText}>DropSignal</span>
+        </div>
 
-          <button
-            onClick={connectWallet}
-            disabled={loading}
-            style={styles.connectButton(loading)}
-          >
+        {address && (
+          <div style={styles.profile}>
+            {address.slice(0,6)}...{address.slice(-4)}
+          </div>
+        )}
+      </div>
+
+      {!address ? (
+        <div style={styles.center}>
+          <h1 style={styles.big}>Earn Real Yield on Base</h1>
+
+          <button onClick={connectWallet} disabled={loading} style={styles.connectBtn}>
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         </div>
-      )}
-
-      {/* ================= AFTER CONNECT ================= */}
-      {address && (
-        <div style={styles.dashboardWrap}>
-
-          {/* HEADER LIKE X-QUO */}
-          <div style={styles.topBar}>
-            <div style={styles.left}>
-              <img
-                src="/logo.png"
-                alt="logo"
-                style={styles.appLogo}
-              />
-              <span style={styles.appName}>DropSignal</span>
-            </div>
-
-            <div style={styles.profile}>
-              {address.slice(0, 6)}...{address.slice(-4)}
-            </div>
-          </div>
-
-          <h2 style={styles.title}>Dashboard</h2>
-
-          {/* CARDS */}
+      ) : (
+        <div style={styles.dashboard}>
           <div style={styles.card}>
-            <p>Total Deposited</p>
-            <h3>{balance.toFixed(2)} USDC</h3>
+            <p>Deposited</p>
+            <h2>{balance.toFixed(2)} USDC</h2>
           </div>
 
           <div style={styles.card}>
             <p>Live Earnings</p>
-            <h3>+{earnings.toFixed(6)} USDC</h3>
+            <h2>+{earnings.toFixed(6)} USDC</h2>
           </div>
 
           <div style={styles.card}>
             <p>APY</p>
-            <h3>{apy}%</h3>
+            <h2>{apy}%</h2>
           </div>
 
-          {/* BUTTONS */}
-          <div style={styles.buttonRow}>
-            <button style={styles.depositBtn}>Deposit USDC</button>
-            <button style={styles.withdrawBtn}>Withdraw</button>
+          <input
+            value={amount}
+            onChange={(e)=>setAmount(e.target.value)}
+            placeholder="Amount USDC"
+            style={styles.input}
+          />
+
+          <div style={styles.row}>
+            <button style={styles.deposit} onClick={deposit}>Deposit</button>
+            <button style={styles.withdraw} onClick={withdraw}>Withdraw</button>
           </div>
         </div>
       )}
@@ -127,129 +186,88 @@ export default function Home() {
   );
 }
 
-
-/* ===================== STYLES ===================== */
-
 const styles = {
-  page: {
-    minHeight: "100vh",
-    width: "100%",
-    position: "relative",
-    overflow: "hidden",
-    color: "white",
-    background: "#000"
+  page:{
+    minHeight:"100vh",
+    position:"relative",
+    background:"#ff7a00",
+    color:"white"
   },
-
-  centerBox: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
-    display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
+  header:{
+    position:"fixed",
+    top:10,
+    left:10,
+    right:10,
+    zIndex:10,
+    display:"flex",
+    justifyContent:"space-between",
+    alignItems:"center"
   },
-
-  logo: {
-    fontSize: 40,
-    fontWeight: "900",
-    letterSpacing: 1
+  logoWrap:{display:"flex",alignItems:"center",gap:8},
+  logoImg:{width:42,height:42,borderRadius:"50%"},
+  logoText:{fontSize:18,fontWeight:900},
+  profile:{
+    background:"rgba(0,0,0,0.5)",
+    padding:"8px 12px",
+    borderRadius:12,
+    border:"1px solid white"
   },
-
-  sub: {
-    opacity: 0.8,
-    marginBottom: 20
+  center:{
+    zIndex:5,
+    minHeight:"100vh",
+    display:"flex",
+    flexDirection:"column",
+    justifyContent:"center",
+    alignItems:"center"
   },
-
-  connectButton: (loading) => ({
-    padding: "14px 30px",
-    borderRadius: 12,
-    border: "none",
-    fontSize: 18,
-    cursor: "pointer",
-    background: "linear-gradient(135deg,#00ffa6,#00b4ff)",
-    opacity: loading ? 0.6 : 1
-  }),
-
-  dashboardWrap: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
-    paddingTop: 30
+  big:{fontSize:30,fontWeight:900,marginBottom:20},
+  connectBtn:{
+    padding:"14px 28px",
+    borderRadius:14,
+    background:"black",
+    color:"white",
+    border:"none",
+    fontSize:18
   },
-
-  topBar: {
-    width: "90%",
-    margin: "0 auto 20px",
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center"
+  dashboard:{
+    paddingTop:120,
+    textAlign:"center"
   },
-
-  left: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10
+  card:{
+    margin:"12px auto",
+    width:"85%",
+    background:"rgba(0,0,0,0.4)",
+    padding:18,
+    borderRadius:16,
+    border:"1px solid white"
   },
-
-  appLogo: {
-    width: 38,
-    height: 38,
-    borderRadius: "50%"
+  input:{
+    width:"80%",
+    padding:12,
+    borderRadius:12,
+    border:"none",
+    marginTop:15
   },
-
-  appName: {
-    fontSize: 18,
-    fontWeight: 800
+  row:{
+    display:"flex",
+    justifyContent:"center",
+    gap:10,
+    marginTop:18
   },
-
-  profile: {
-    padding: "8px 14px",
-    borderRadius: 12,
-    border: "1px solid white",
-    fontSize: 14
+  deposit:{
+    background:"lime",
+    padding:"12px 20px",
+    borderRadius:12,
+    border:"none",
+    color:"black",
+    fontWeight:900
   },
-
-  title: {
-    textAlign: "center",
-    fontSize: 32,
-    marginBottom: 10
-  },
-
-  card: {
-    background: "rgba(0,0,0,0.6)",
-    borderRadius: 18,
-    padding: 20,
-    margin: "15px auto",
-    width: "85%",
-    border: "1px solid rgba(255,255,255,0.2)",
-    backdropFilter: "blur(6px)",
-    textAlign: "center"
-  },
-
-  buttonRow: {
-    marginTop: 20,
-    display: "flex",
-    justifyContent: "center",
-    gap: 10
-  },
-
-  depositBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "none",
-    background: "#00ff9c",
-    color: "#000",
-    fontWeight: 700,
-    cursor: "pointer"
-  },
-
-  withdrawBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "1px solid white",
-    background: "transparent",
-    color: "white",
-    cursor: "pointer"
+  withdraw:{
+    background:"red",
+    padding:"12px 20px",
+    borderRadius:12,
+    border:"none",
+    color:"white",
+    fontWeight:900
   }
 };
