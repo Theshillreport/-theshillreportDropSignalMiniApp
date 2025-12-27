@@ -25,15 +25,11 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [apy] = useState(4.3);
+  const [apy] = useState(4.3); 
   const [earnings, setEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
-
-  const myInviteLink = address
-    ? `https://dropsignal.vercel.app/?ref=${address}`
-    : "";
 
   // ---------------- WALLET ----------------
   const connectWallet = async () => {
@@ -45,9 +41,7 @@ export default function Page() {
         localStorage.removeItem("wc@2:core:pairing");
       }
 
-      const { EthereumProvider } = await import(
-        "@walletconnect/ethereum-provider"
-      );
+      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
 
       const wc = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
@@ -122,7 +116,7 @@ export default function Page() {
     }
   };
 
-  // ---------------- LIVE EARNINGS ----------------
+  // ---------------- LIVE EARNINGS ENGINE ----------------
   useEffect(() => {
     if (!depositedTotal) return;
 
@@ -146,6 +140,7 @@ export default function Page() {
         fontFamily: "system-ui",
       }}
     >
+
       {/* HEADER */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
@@ -160,47 +155,62 @@ export default function Page() {
       </div>
 
       {!address ? (
-        <>
-          <p style={{ marginTop: 25, opacity: 0.8 }}>
-            Deposit USDC → Earn Real Yield on Base
-          </p>
-
-          <button
-            onClick={connectWallet}
-            style={{
-              background: "#ff7b00",
-              padding: 12,
-              width: "100%",
-              borderRadius: 10,
-              border: "none",
-              color: "white",
-              fontSize: 16,
-              marginTop: 40,
-            }}
-          >
-            {loading ? "Connecting..." : "Connect Wallet"}
-          </button>
-        </>
+        <button
+          onClick={connectWallet}
+          style={{
+            background: "#ff7b00",
+            padding: 12,
+            width: "100%",
+            borderRadius: 10,
+            border: "none",
+            color: "white",
+            fontSize: 16,
+            marginTop: 40,
+          }}
+        >
+          {loading ? "Connecting..." : "Connect Wallet"}
+        </button>
       ) : (
         <>
           <p style={{ marginTop: 20 }}>
             Connected: {address.slice(0, 6)}...{address.slice(-4)}
           </p>
 
-          {/* APY */}
-          <div style={card}>
+          {/* LIVE APY */}
+          <div
+            style={{
+              marginTop: 20,
+              background: "#0d1335",
+              padding: 15,
+              borderRadius: 10,
+            }}
+          >
             <h3>Aave Live Yield</h3>
             <p style={{ fontSize: 26 }}>{apy}%</p>
           </div>
 
           {/* BALANCE */}
-          <div style={card}>
+          <div
+            style={{
+              marginTop: 20,
+              background: "#0d1335",
+              padding: 15,
+              borderRadius: 10,
+            }}
+          >
             <h3>Your USDC Balance</h3>
             <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
           </div>
 
-          {/* EARNINGS */}
-          <div style={{ ...card, background: "#13205c" }}>
+          {/* LIVE EARNINGS */}
+          <div
+            style={{
+              marginTop: 20,
+              background: "#13205c",
+              padding: 15,
+              borderRadius: 10,
+            }}
+          >
             <h3>Live Earnings</h3>
             <p style={{ fontSize: 26, color: "#00ffa6" }}>
               +{earnings.toFixed(6)} USDC
@@ -213,9 +223,27 @@ export default function Page() {
               placeholder="USDC Amount"
               value={depositAmount}
               onChange={(e) => setDepositAmount(e.target.value)}
-              style={input}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 10,
+                border: "none",
+                marginBottom: 10,
+              }}
             />
-            <button style={greenBtn} onClick={deposit}>
+
+            <button
+              onClick={deposit}
+              style={{
+                width: "100%",
+                padding: 12,
+                borderRadius: 10,
+                background: "green",
+                border: "none",
+                color: "white",
+                fontSize: 16,
+              }}
+            >
               Deposit
             </button>
           </div>
@@ -226,57 +254,28 @@ export default function Page() {
               placeholder="Withdraw Amount"
               value={withdrawAmount}
               onChange={(e) => setWithdrawAmount(e.target.value)}
-              style={input}
+              style={{
+                width: "100%",
+                padding: 10,
+                borderRadius: 10,
+                border: "none",
+                marginBottom: 10,
+              }}
             />
-            <button style={redBtn} onClick={withdraw}>
+
+            <button
+              onClick={withdraw}
+              style={{
+                width: "100%",
+                padding: 12,
+                borderRadius: 10,
+                background: "red",
+                border: "none",
+                color: "white",
+                fontSize: 16,
+              }}
+            >
               Withdraw
-            </button>
-          </div>
-
-          {/* SOCIAL SHARE */}
-          <div style={card}>
-            <h3>📢 Share & Go Viral</h3>
-
-            <button
-              style={twitter}
-              onClick={() => {
-                if (!myInviteLink) return alert("Connect first");
-                const text = encodeURIComponent(
-                  "I'm earning boosted USDC yield with DropSignal on Base 🚀 Join my team & get +2% boost!"
-                );
-                const url = encodeURIComponent(myInviteLink);
-                window.open(
-                  `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
-                  "_blank"
-                );
-              }}
-            >
-              🐦 Share on X / Twitter
-            </button>
-
-            <button
-              style={warpcast}
-              onClick={() => {
-                if (!myInviteLink) return alert("Connect first");
-                const text =
-                  "Earning boosted USDC yield with DropSignal on Base 🚀 Join & get +2% boost: " +
-                  myInviteLink;
-                window.location.href =
-                  "farcaster://compose?text=" + encodeURIComponent(text);
-              }}
-            >
-              💜 Share on Farcaster
-            </button>
-
-            <button
-              style={copyBtn}
-              onClick={() => {
-                if (!myInviteLink) return alert("Connect first");
-                navigator.clipboard.writeText(myInviteLink);
-                alert("Copied Invite Link!");
-              }}
-            >
-              📋 Copy Invite Link
             </button>
           </div>
         </>
@@ -284,70 +283,3 @@ export default function Page() {
     </div>
   );
 }
-
-const card = {
-  marginTop: 20,
-  background: "#0d1335",
-  padding: 15,
-  borderRadius: 10,
-};
-
-const input = {
-  width: "100%",
-  padding: 10,
-  borderRadius: 10,
-  border: "none",
-  marginBottom: 10,
-};
-
-const greenBtn = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  background: "green",
-  border: "none",
-  color: "white",
-  fontSize: 16,
-};
-
-const redBtn = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 10,
-  background: "red",
-  border: "none",
-  color: "white",
-  fontSize: 16,
-};
-
-const twitter = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 12,
-  border: "none",
-  background: "#1DA1F2",
-  color: "white",
-  fontSize: 16,
-  marginBottom: 10,
-};
-
-const warpcast = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 12,
-  border: "none",
-  background: "#7C3AED",
-  color: "white",
-  fontSize: 16,
-  marginBottom: 10,
-};
-
-const copyBtn = {
-  width: "100%",
-  padding: 12,
-  borderRadius: 12,
-  border: "none",
-  background: "#0f172a",
-  color: "white",
-  fontSize: 16,
-};
