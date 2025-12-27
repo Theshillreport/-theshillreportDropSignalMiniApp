@@ -5,7 +5,7 @@ import { ethers } from "ethers";
 
 const AAVE_POOL = "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bDA02913";
-const aUSDC = "0x1F32b1c2345538c0c6f582fCB022739c4A194Ebb";
+const aUSDC = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
 
 const ERC20_ABI = [
   "function balanceOf(address owner) view returns (uint256)",
