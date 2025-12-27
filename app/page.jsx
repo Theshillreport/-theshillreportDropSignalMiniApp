@@ -31,7 +31,7 @@ export default function Page() {
 
   const [loading, setLoading] = useState(false);
 
-  // ---------------- WALLET ----------------
+  // WALLET CONNECT
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -65,7 +65,7 @@ export default function Page() {
     }
   };
 
-  // ---------------- BALANCE ----------------
+  // BALANCE
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -75,7 +75,7 @@ export default function Page() {
     } catch {}
   };
 
-  // ---------------- DEPOSIT ----------------
+  // DEPOSIT
   const deposit = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -98,7 +98,7 @@ export default function Page() {
     }
   };
 
-  // ---------------- WITHDRAW ----------------
+  // WITHDRAW
   const withdraw = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -116,7 +116,7 @@ export default function Page() {
     }
   };
 
-  // ---------------- LIVE EARNINGS ENGINE ----------------
+  // LIVE EARNINGS
   useEffect(() => {
     if (!depositedTotal) return;
 
@@ -130,9 +130,9 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [depositedTotal, apy]);
 
-  // ---------------- UI ----------------
+  // ===================== UI =====================
 
-  // LANDING SCREEN BEFORE CONNECT
+  // BEFORE CONNECT SCREEN
   if (!address) {
     return (
       <div
@@ -149,7 +149,6 @@ export default function Page() {
           overflow: "hidden",
         }}
       >
-        {/* floating $ */}
         {[...Array(30)].map((_, i) => (
           <span
             key={i}
@@ -176,7 +175,7 @@ export default function Page() {
         />
 
         <h1 style={{ fontSize: 34 }}>DropSignal</h1>
-        <p>Optimized USDC yield on Base</p>
+        <p>USDC Yield auf Base</p>
 
         <button
           onClick={connectWallet}
@@ -196,12 +195,12 @@ export default function Page() {
     );
   }
 
-  // AFTER CONNECT → your existing working app UI
+  // AFTER CONNECT SCREEN
   return (
     <div
       style={{
         minHeight: "100vh",
-        background: "#050b1e",
+        background: "#020617",
         color: "white",
         padding: 20,
         fontFamily: "system-ui",
@@ -214,82 +213,79 @@ export default function Page() {
             width: 42,
             height: 42,
             borderRadius: "50%",
-            background: "#ff7b00",
+            background: "linear-gradient(145deg,#ff7b00,#ffa640)",
+            boxShadow: "0 0 25px #ff7b0080",
           }}
         />
         <h2>DropSignal</h2>
       </div>
 
-      <p style={{ marginTop: 20 }}>
-        Connected: {address.slice(0, 6)}...{address.slice(-4)}
+      <p style={{ marginTop: 8, opacity: 0.7 }}>
+        {address.slice(0, 6)}...{address.slice(-4)}
       </p>
 
-      {/* LIVE APY */}
-      <div
-        style={{
-          marginTop: 20,
-          background: "#0d1335",
-          padding: 15,
-          borderRadius: 10,
-        }}
-      >
-        <h3>Aave Live Yield</h3>
-        <p style={{ fontSize: 26 }}>{apy}%</p>
-      </div>
+      {/* CARDS */}
+      <div style={{ marginTop: 25, display: "grid", gap: 15 }}>
+        <div
+          style={{
+            background: "linear-gradient(135deg,#0d1335,#1a2c6b)",
+            padding: 18,
+            borderRadius: 16,
+            boxShadow: "0px 0px 30px #132e7a50",
+          }}
+        >
+          <h3>Aave APY</h3>
+          <p style={{ fontSize: 32, color: "#00ffa6" }}>{apy}%</p>
+        </div>
 
-      {/* BALANCE */}
-      <div
-        style={{
-          marginTop: 20,
-          background: "#0d1335",
-          padding: 15,
-          borderRadius: 10,
-        }}
-      >
-        <h3>Your USDC Balance</h3>
-        <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
-      </div>
+        <div
+          style={{
+            background: "linear-gradient(135deg,#0d1335,#13205c)",
+            padding: 18,
+            borderRadius: 16,
+          }}
+        >
+          <h3>Balance</h3>
+          <p style={{ fontSize: 26 }}>{usdcBalance} USDC</p>
+        </div>
 
-      {/* LIVE EARNINGS */}
-      <div
-        style={{
-          marginTop: 20,
-          background: "#13205c",
-          padding: 15,
-          borderRadius: 10,
-        }}
-      >
-        <h3>Live Earnings</h3>
-        <p style={{ fontSize: 26, color: "#00ffa6" }}>
-          +{earnings.toFixed(6)} USDC
-        </p>
+        <div
+          style={{
+            background: "linear-gradient(135deg,#071b2e,#0f3052)",
+            padding: 18,
+            borderRadius: 16,
+          }}
+        >
+          <h3>Live Earnings</h3>
+          <p style={{ fontSize: 28, color: "#00ffa6" }}>
+            +{earnings.toFixed(6)} USDC
+          </p>
+        </div>
       </div>
 
       {/* DEPOSIT */}
       <div style={{ marginTop: 30 }}>
         <input
-          placeholder="USDC Amount"
+          placeholder="Deposit USDC"
           value={depositAmount}
           onChange={(e) => setDepositAmount(e.target.value)}
           style={{
             width: "100%",
-            padding: 10,
-            borderRadius: 10,
+            padding: 12,
+            borderRadius: 12,
             border: "none",
             marginBottom: 10,
           }}
         />
-
         <button
           onClick={deposit}
           style={{
             width: "100%",
-            padding: 12,
-            borderRadius: 10,
+            padding: 14,
+            borderRadius: 12,
             background: "green",
             border: "none",
             color: "white",
-            fontSize: 16,
           }}
         >
           Deposit
@@ -299,28 +295,26 @@ export default function Page() {
       {/* WITHDRAW */}
       <div style={{ marginTop: 30 }}>
         <input
-          placeholder="Withdraw Amount"
+          placeholder="Withdraw USDC"
           value={withdrawAmount}
           onChange={(e) => setWithdrawAmount(e.target.value)}
           style={{
             width: "100%",
-            padding: 10,
-            borderRadius: 10,
+            padding: 12,
+            borderRadius: 12,
             border: "none",
             marginBottom: 10,
           }}
         />
-
         <button
           onClick={withdraw}
           style={{
             width: "100%",
-            padding: 12,
-            borderRadius: 10,
+            padding: 14,
+            borderRadius: 12,
             background: "red",
             border: "none",
             color: "white",
-            fontSize: 16,
           }}
         >
           Withdraw
