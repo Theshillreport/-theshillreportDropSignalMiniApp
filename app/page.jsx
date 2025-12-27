@@ -27,6 +27,7 @@ export default function Page() {
 
   const [apy] = useState(4.3);
   const [earnings, setEarnings] = useState(0);
+  const [animatedEarnings, setAnimatedEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
@@ -116,7 +117,7 @@ export default function Page() {
     }
   };
 
-  // LIVE EARNINGS
+  // REAL LIVE YIELD ENGINE
   useEffect(() => {
     if (!depositedTotal) return;
 
@@ -130,9 +131,23 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [depositedTotal, apy]);
 
-  // ===================== UI =====================
+  // SMOOTH ANIMATION LIKE X-QUO
+  useEffect(() => {
+    let frame;
+    const animate = () => {
+      setAnimatedEarnings((prev) => {
+        const diff = earnings - prev;
+        if (Math.abs(diff) < 0.0000001) return earnings;
+        return prev + diff * 0.08; // smooth easing
+      });
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [earnings]);
 
-  // BEFORE CONNECT SCREEN
+  // =================== UI ===================
+
   if (!address) {
     return (
       <div
@@ -195,7 +210,6 @@ export default function Page() {
     );
   }
 
-  // AFTER CONNECT SCREEN
   return (
     <div
       style={{
@@ -206,7 +220,6 @@ export default function Page() {
         fontFamily: "system-ui",
       }}
     >
-      {/* HEADER */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
           style={{
@@ -224,7 +237,6 @@ export default function Page() {
         {address.slice(0, 6)}...{address.slice(-4)}
       </p>
 
-      {/* CARDS */}
       <div style={{ marginTop: 25, display: "grid", gap: 15 }}>
         <div
           style={{
@@ -258,12 +270,11 @@ export default function Page() {
         >
           <h3>Live Earnings</h3>
           <p style={{ fontSize: 28, color: "#00ffa6" }}>
-            +{earnings.toFixed(6)} USDC
+            +{animatedEarnings.toFixed(6)} USDC
           </p>
         </div>
       </div>
 
-      {/* DEPOSIT */}
       <div style={{ marginTop: 30 }}>
         <input
           placeholder="Deposit USDC"
@@ -292,7 +303,6 @@ export default function Page() {
         </button>
       </div>
 
-      {/* WITHDRAW */}
       <div style={{ marginTop: 30 }}>
         <input
           placeholder="Withdraw USDC"
