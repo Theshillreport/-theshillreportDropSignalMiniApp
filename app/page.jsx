@@ -1,174 +1,147 @@
 "use client";
-
-import { useState, useEffect } from "react";
-import { ethers } from "ethers";
-
-const AAVE_POOL = "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73";
-const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bDA02913";
-const aUSDC = "0xfFc9Ad9B9A736544f062247Eb0D8a4F506805b69";
-
-const ERC20_ABI = [
-  "function balanceOf(address owner) view returns (uint256)",
-  "function decimals() view returns (uint8)"
-];
+import { useEffect, useState } from "react";
 
 export default function Page() {
-  const [provider, setProvider] = useState(null);
-  const [address, setAddress] = useState(null);
+  const [account, setAccount] = useState(null);
+  const [connected, setConnected] = useState(false);
 
-  const [usdcBalance, setUsdcBalance] = useState(0);
-  const [aUsdcBalance, setAUsdcBalance] = useState(0);
+  // Earnings Counter
   const [earnings, setEarnings] = useState(0);
-  const [apy, setApy] = useState(0);
+  const apy = 4.2; // Demo APY
+  const startAmount = 1000; // Beispiel Start Balance
 
-  const [depositAmount, setDepositAmount] = useState("");
-  const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [loading, setLoading] = useState(false);
+  useEffect(() => {
+    if (!connected) return;
 
+    let amt = 0;
+    const perSecond = (startAmount * (apy / 100)) / (365 * 24 * 60 * 60);
+
+    const interval = setInterval(() => {
+      amt += perSecond;
+      setEarnings(amt);
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, [connected]);
+
+  // Wallet Connect
   const connectWallet = async () => {
     try {
-      setLoading(true);
-
-      if (typeof localStorage !== "undefined") {
-        localStorage.removeItem("wc@2:client:session");
-        localStorage.removeItem("wc@2:core:pairing");
+      if (!window.ethereum) {
+        alert("Keine Wallet gefunden. Bitte MetaMask oder Coinbase Wallet nutzen.");
+        return;
       }
 
-      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
-
-      const wc = await EthereumProvider.init({
-        projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [8453],
-        showQrModal: true,
+      const accounts = await window.ethereum.request({
+        method: "eth_requestAccounts",
       });
 
-      await wc.connect();
-      const prov = new ethers.BrowserProvider(wc);
-      setProvider(prov);
-
-      const signer = await prov.getSigner();
-      const addr = await signer.getAddress();
-      setAddress(addr);
-
-      loadBalances(prov, addr);
-      loadAaveAPY(prov);
+      setAccount(accounts[0]);
+      setConnected(true);
     } catch (err) {
       console.log(err);
-      alert("Connect Wallet failed");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const loadBalances = async (prov, addr) => {
-    try {
-      const signer = await prov.getSigner();
-
-      const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
-      const decUsdc = await usdc.decimals();
-      const balUsdc = await usdc.balanceOf(addr);
-      setUsdcBalance(Number(ethers.formatUnits(balUsdc, decUsdc)));
-
-      const ausdc = new ethers.Contract(aUSDC, ERC20_ABI, signer);
-      const decAUsdc = await ausdc.decimals();
-      const balAUsdc = await ausdc.balanceOf(addr);
-      setAUsdcBalance(Number(ethers.formatUnits(balAUsdc, decAUsdc)));
-
-      setEarnings(Number(ethers.formatUnits(balAUsdc, decAUsdc)) - Number(ethers.formatUnits(balUsdc, decUsdc)));
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const loadAaveAPY = async (prov) => {
-    try {
-      const pool = new ethers.Contract(AAVE_POOL, [
-        "function getReserveData(address asset) view returns (uint256 configuration,uint128 liquidityIndex,uint128 currentLiquidityRate,uint128 variableBorrowIndex,uint128 currentVariableBorrowRate,uint128 stableBorrowRate,uint40 lastUpdateTimestamp,address aTokenAddress,uint8 id)"
-      ], prov);
-      const data = await pool.getReserveData(USDC);
-      const rate = Number(data.currentLiquidityRate) / 1e27;
-      setApy((rate * 100).toFixed(2));
-    } catch (err) {
-      console.log(err);
-    }
-  };
-
-  const deposit = async () => {
-    try {
-      if (!provider) return alert("Connect Wallet first");
-      const signer = await provider.getSigner();
-
-      const amountParsed = ethers.parseUnits(depositAmount, 6);
-      const usdc = new ethers.Contract(USDC, ["function approve(address spender,uint256 value) external returns (bool)"], signer);
-      await usdc.approve(AAVE_POOL, amountParsed);
-
-      const pool = new ethers.Contract(AAVE_POOL, ["function supply(address,address,uint256,address,uint16) external"], signer);
-      await pool.supply(USDC, amountParsed, address, 0);
-
-      alert("Deposit Successful!");
-      loadBalances(provider, address);
-    } catch (err) {
-      console.log(err);
-      alert("Deposit failed");
-    }
-  };
-
-  const withdraw = async () => {
-    try {
-      if (!provider) return alert("Connect Wallet first");
-      const signer = await provider.getSigner();
-
-      const amountParsed = ethers.parseUnits(withdrawAmount, 6);
-      const pool = new ethers.Contract(AAVE_POOL, ["function withdraw(address,uint256,address) external returns(uint256)"], signer);
-      await pool.withdraw(USDC, amountParsed, address);
-
-      alert("Withdraw Successful!");
-      loadBalances(provider, address);
-    } catch (err) {
-      console.log(err);
-      alert("Withdraw failed");
     }
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "#050b1e", color: "white", padding: 20 }}>
-      {!address ? (
-        <button onClick={connectWallet} style={{ background: "#ff7b00", padding: 12, borderRadius: 8 }}>
-          {loading ? "Connecting..." : "Connect Wallet"}
-        </button>
-      ) : (
-        <>
-          <p>Connected: {address.slice(0,6)}...{address.slice(-4)}</p>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#050B1E",
+        color: "white",
+        fontFamily: "system-ui, sans-serif",
+        padding: 18,
+        boxSizing: "border-box",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          marginBottom: 20,
+        }}
+      >
+        <img
+          src="/logo.png"
+          alt="App Logo"
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: "50%",
+            objectFit: "cover",
+          }}
+        />
 
-          <div>
-            <h3>Your USDC Balance</h3>
-            <p>{usdcBalance} USDC</p>
-          </div>
+        <div style={{ display: "flex", flexDirection: "column" }}>
+          <span style={{ fontSize: 18, fontWeight: 700 }}>DropSignal Yield</span>
+          <span style={{ fontSize: 12, opacity: 0.7 }}>
+            Earn on Base · Powered by Aave
+          </span>
+        </div>
+      </div>
 
-          <div>
-            <h3>Your aUSDC Balance</h3>
-            <p>{aUsdcBalance} aUSDC</p>
-          </div>
+      {/* CARD */}
+      <div
+        style={{
+          background: "#0F1A3A",
+          borderRadius: 16,
+          padding: 18,
+          marginTop: 10,
+        }}
+      >
+        {!connected && (
+          <>
+            <p style={{ opacity: 0.7 }}>Verbinde deine Wallet um zu starten</p>
 
-          <div>
-            <h3>Live Earnings</h3>
-            <p>{earnings.toFixed(6)} USDC</p>
-          </div>
+            <button
+              onClick={connectWallet}
+              style={{
+                width: "100%",
+                padding: 14,
+                borderRadius: 12,
+                border: "none",
+                background: "#3478F6",
+                color: "white",
+                fontSize: 16,
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Connect Wallet
+            </button>
+          </>
+        )}
 
-          <div>
-            <h3>Current APY</h3>
-            <p>{apy}%</p>
-          </div>
+        {connected && (
+          <>
+            <p style={{ opacity: 0.7 }}>
+              Verbunden: {account.slice(0, 6)}...{account.slice(-4)}
+            </p>
 
-          <input placeholder="Deposit Amount" value={depositAmount} onChange={e=>setDepositAmount(e.target.value)} />
+            <div
+              style={{
+                marginTop: 20,
+                background: "#081029",
+                padding: 16,
+                borderRadius: 12,
+              }}
+            >
+              <p style={{ margin: 0, opacity: 0.8 }}>Live Earnings</p>
 
-          <button onClick={deposit}>Deposit</button>
+              <h1 style={{ margin: 0, marginTop: 6 }}>
+                ${earnings.toFixed(6)}
+              </h1>
 
-          <input placeholder="Withdraw Amount" value={withdrawAmount} onChange={e=>setWithdrawAmount(e.target.value)} />
-
-          <button onClick={withdraw}>Withdraw</button>
-        </>
-      )}
+              <p style={{ marginTop: 5, opacity: 0.6 }}>
+                APY ~ {apy}% (Demo Anzeige)
+              </p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }
