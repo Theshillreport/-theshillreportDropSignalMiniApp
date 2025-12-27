@@ -36,8 +36,6 @@ export default function Page() {
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
-
-  // 🎉 Money Splash State
   const [splash, setSplash] = useState(false);
 
   const connectWallet = async () => {
@@ -97,7 +95,6 @@ export default function Page() {
       setDepositedTotal(v => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
 
-      // 💸 Money Splash Animation Trigger
       setSplash(true);
       setTimeout(() => setSplash(false), 2200);
 
@@ -210,11 +207,22 @@ export default function Page() {
             100% { transform: translateY(0px); opacity: .85; }
           }
 
-          /* 💸 MONEY SPLASH */
           @keyframes moneyFall {
             0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
             15% { opacity: 1; }
             100% { transform: translateY(120vh) rotate(360deg); opacity: 0; }
+          }
+
+          /* BOOST ENERGY PULSE */
+          @keyframes boostPulse {
+            0% { box-shadow: 0 0 15px rgba(255,122,0,.6), 0 0 30px rgba(255,122,0,.4); }
+            50% { box-shadow: 0 0 35px rgba(255,122,0,1), 0 0 90px rgba(255,122,0,.9); }
+            100% { box-shadow: 0 0 15px rgba(255,122,0,.6), 0 0 30px rgba(255,122,0,.4); }
+          }
+
+          @keyframes boostRing {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.6); opacity: 0; }
           }
         `}</style>
       </div>
@@ -225,7 +233,6 @@ export default function Page() {
     <div style={styles.app}>
       <div style={styles.animatedGrid}></div>
 
-      {/* 💸 Splash Overlay */}
       {splash && (
         <div style={styles.splashLayer}>
           {Array.from({ length: 18 }).map((_, i) => (
@@ -242,10 +249,7 @@ export default function Page() {
 
       <div style={styles.topBar}>
         <div style={styles.logoGlow}>
-          <img
-            src="/IMG_2690.jpeg"
-            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
-          />
+          <img src="/IMG_2690.jpeg" style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }} />
         </div>
         <h2>DropSignal</h2>
       </div>
@@ -261,19 +265,21 @@ export default function Page() {
 
         <Card title="Balance" value={`${usdcBalance} USDC`} />
 
-        <div style={styles.neonCard}>
+        <div style={{
+          ...styles.neonCard,
+          ...(boostActive ? { animation: "boostPulse 2.2s infinite" } : {})
+        }}>
           <h3 style={{ color: "#00ffa6" }}>Live Earnings</h3>
-          <p style={styles.neonText}>
-            +{animatedEarnings.toFixed(6)} USDC
-          </p>
+          <p style={styles.neonText}>+{animatedEarnings.toFixed(6)} USDC</p>
         </div>
 
         {boostActive && (
-          <Card
-            title="Boost Time Left"
-            value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
-            color="#ff7b00"
-          />
+          <div style={styles.cardGlow}>
+            <h3>Boost Time Left</h3>
+            <p style={{ fontSize: 26, color: "#ff7b00", animation: "boostPulse 2s infinite" }}>
+              {Math.floor(boostTime / 60)}:{String(boostTime % 60).padStart(2, "0")}
+            </p>
+          </div>
         )}
       </div>
 
@@ -283,23 +289,8 @@ export default function Page() {
         </button>
       )}
 
-      <InputBlock
-        value={depositAmount}
-        onChange={setDepositAmount}
-        action={deposit}
-        placeholder="Deposit USDC"
-        btnColor="green"
-        text="Deposit"
-      />
-
-      <InputBlock
-        value={withdrawAmount}
-        onChange={setWithdrawAmount}
-        action={withdraw}
-        placeholder="Withdraw USDC"
-        btnColor="red"
-        text="Withdraw"
-      />
+      <InputBlock value={depositAmount} onChange={setDepositAmount} action={deposit} placeholder="Deposit USDC" btnColor="green" text="Deposit" />
+      <InputBlock value={withdrawAmount} onChange={setWithdrawAmount} action={withdraw} placeholder="Withdraw USDC" btnColor="red" text="Withdraw" />
     </div>
   );
 }
@@ -316,18 +307,8 @@ function Card({ title, value, color }) {
 function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
   return (
     <div style={{ marginTop: 25 }}>
-      <input
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={styles.input}
-      />
-      <button
-        onClick={action}
-        style={{ ...styles.actionBtn, background: btnColor }}
-      >
-        {text}
-      </button>
+      <input placeholder={placeholder} value={value} onChange={(e) => onChange(e.target.value)} style={styles.input} />
+      <button onClick={action} style={{ ...styles.actionBtn, background: btnColor }}>{text}</button>
     </div>
   );
 }
@@ -409,8 +390,7 @@ const styles = {
     background: "linear-gradient(145deg,#00241a,#00593e)",
     padding: 18,
     borderRadius: 18,
-    boxShadow:
-      "0 0 35px rgba(0,255,166,.55), inset 0 0 26px rgba(0,255,166,.25)",
+    boxShadow: "0 0 35px rgba(0,255,166,.55), inset 0 0 26px rgba(0,255,166,.25)",
     zIndex: 2,
   },
 
