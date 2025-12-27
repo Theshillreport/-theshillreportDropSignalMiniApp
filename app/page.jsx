@@ -25,14 +25,22 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [apy] = useState(4.3);
+  // BASE APY (Aave Live feeling)
+  const [baseApy] = useState(4.3);
+
+  // BOOST SYSTEM
+  const [boostActive, setBoostActive] = useState(false);
+  const [boostApy, setBoostApy] = useState(0);
+  const [boostTime, setBoostTime] = useState(0);
+
+  // Earnings
   const [earnings, setEarnings] = useState(0);
   const [animatedEarnings, setAnimatedEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
 
-  // ================= WALLET CONNECT =================
+  // ================= WALLET =================
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -79,8 +87,7 @@ export default function Page() {
   // ================= DEPOSIT =================
   const deposit = async () => {
     try {
-      if (!provider) return alert("Connect Wallet first");
-
+      if (!provider) return alert("Connect Wallet");
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(depositAmount, 6);
 
@@ -90,9 +97,8 @@ export default function Page() {
       const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
       await pool.supply(USDC, amount, address, 0);
 
-      setDepositedTotal((v) => v + Number(depositAmount));
+      setDepositedTotal(v => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
-
       loadUSDCBalance(provider, address);
     } catch {
       alert("Deposit Fehler");
@@ -102,8 +108,7 @@ export default function Page() {
   // ================= WITHDRAW =================
   const withdraw = async () => {
     try {
-      if (!provider) return alert("Connect Wallet first");
-
+      if (!provider) return alert("Connect Wallet");
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(withdrawAmount, 6);
 
@@ -117,25 +122,52 @@ export default function Page() {
     }
   };
 
+  // ================= BOOST SYSTEM =================
+  const activateBoost = () => {
+    if (boostActive) return alert("Boost läuft bereits!");
+    setBoostActive(true);
+    setBoostApy(2.0);          // +2% Bonus
+    setBoostTime(3600);        // 1 Stunde Boost
+
+    alert("BOOST aktiviert! 🔥 +2% APY für 60 Minuten");
+  };
+
+  useEffect(() => {
+    if (!boostActive) return;
+    if (boostTime <= 0) {
+      setBoostActive(false);
+      setBoostApy(0);
+      return;
+    }
+
+    const timer = setTimeout(() => {
+      setBoostTime(t => t - 1);
+    }, 1000);
+
+    return () => clearTimeout(timer);
+  }, [boostActive, boostTime]);
+
+  const totalApy = baseApy + boostApy;
+
   // ================= REAL YIELD =================
   useEffect(() => {
     if (!depositedTotal) return;
 
-    const yearlyRate = apy / 100;
+    const yearlyRate = totalApy / 100;
     const perSecondRate = yearlyRate / (365 * 24 * 60 * 60);
 
     const interval = setInterval(() => {
-      setEarnings((e) => e + depositedTotal * perSecondRate);
+      setEarnings(e => e + depositedTotal * perSecondRate);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [depositedTotal, apy]);
+  }, [depositedTotal, totalApy]);
 
-  // ================= SMOOTH ANIMATION =================
+  // Smooth Animation
   useEffect(() => {
     let frame;
     const animate = () => {
-      setAnimatedEarnings((prev) => {
+      setAnimatedEarnings(prev => {
         const diff = earnings - prev;
         if (Math.abs(diff) < 0.0000001) return earnings;
         return prev + diff * 0.08;
@@ -146,14 +178,14 @@ export default function Page() {
     return () => cancelAnimationFrame(frame);
   }, [earnings]);
 
-  // ================= UI WHEN NOT CONNECTED =================
+  // ================= CONNECT SCREEN =================
   if (!address) {
     return (
       <div style={styles.wrapper}>
         <div style={styles.grid}></div>
 
         <div style={styles.logoBig}></div>
-        <h1 style={{ fontSize: 34 }}>DropSignal</h1>
+        <h1>DropSignal</h1>
         <p>USDC Yield auf Base</p>
 
         <button onClick={connectWallet} style={styles.connectBtn}>
@@ -173,15 +205,30 @@ export default function Page() {
         <h2>DropSignal</h2>
       </div>
 
-      <p style={{ marginTop: 8, opacity: 0.7 }}>
+      <p style={{ opacity: 0.7 }}>
         {address.slice(0, 6)}...{address.slice(-4)}
       </p>
 
-      <div style={{ marginTop: 25, display: "grid", gap: 15 }}>
-        <Card title="Aave APY" value={`${apy}%`} color="#00ffa6" />
+      <div style={{ marginTop: 20, display: "grid", gap: 15 }}>
+        <Card title="Base APY" value={`${baseApy}%`} />
+        <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
+        <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
         <Card title="Balance" value={`${usdcBalance} USDC`} />
         <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
+        {boostActive && (
+          <Card
+            title="Boost Time Left"
+            value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
+            color="#ff7b00"
+          />
+        )}
       </div>
+
+      {!boostActive && (
+        <button onClick={activateBoost} style={styles.boostBtn}>
+          🚀 Activate Boost +2% APY
+        </button>
+      )}
 
       <InputBlock
         value={depositAmount}
@@ -204,20 +251,19 @@ export default function Page() {
   );
 }
 
-// ================= SMALL UI COMPONENTS =================
-
+// ================= UI COMPONENTS =================
 function Card({ title, value, color }) {
   return (
     <div style={styles.card}>
       <h3>{title}</h3>
-      <p style={{ fontSize: 28, color: color || "white" }}>{value}</p>
+      <p style={{ fontSize: 26, color: color || "white" }}>{value}</p>
     </div>
   );
 }
 
 function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
   return (
-    <div style={{ marginTop: 30 }}>
+    <div style={{ marginTop: 25 }}>
       <input
         placeholder={placeholder}
         value={value}
@@ -311,6 +357,17 @@ const styles = {
     fontSize: 18,
     marginTop: 25,
     zIndex: 2,
+  },
+
+  boostBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 14,
+    background: "#ff7b00",
+    color: "white",
+    border: "none",
+    marginTop: 20,
+    fontSize: 18,
   },
 
   input: {
