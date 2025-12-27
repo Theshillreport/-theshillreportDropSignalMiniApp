@@ -135,21 +135,15 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [deposited, apy]);
 
-  // ---------------- CONNECT SCREEN ----------------
+  // ---------------- CONNECT SCREEN (ALTES DESIGN) ----------------
   if (!address) {
     return (
       <div style={styles.wrapper}>
-        <img
-          src="/logo.png"
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            marginBottom: 15
-          }}
-        />
+        <div style={styles.grid}></div>
 
-        <h1 style={{ marginBottom: 5 }}>DropSignal</h1>
+        <div style={styles.logoBig}></div>
+
+        <h1>DropSignal</h1>
         <p style={{ opacity: 0.7 }}>USDC Yield auf Base</p>
 
         <button onClick={connectWallet} style={styles.connectBtn}>
@@ -159,18 +153,11 @@ export default function Page() {
     );
   }
 
-  // ---------------- MAIN UI ----------------
+  // ---------------- AFTER CONNECT ----------------
   return (
     <div style={styles.app}>
       <div style={styles.top}>
-        <img
-          src="/logo.png"
-          style={{
-            width: 40,
-            height: 40,
-            borderRadius: "50%"
-          }}
-        />
+        <div style={styles.logo}></div>
         <span style={{ opacity: 0.8 }}>
           {address.slice(0, 6)}...{address.slice(-4)}
         </span>
@@ -251,7 +238,38 @@ const styles = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    fontFamily: "system-ui"
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden"
+  },
+
+  grid: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
+    filter: "blur(0.7px)",
+    zIndex: 0
+  },
+
+  logoBig: {
+    width: 120,
+    height: 120,
+    borderRadius: "50%",
+    background: "white",
+    marginBottom: 15,
+    zIndex: 2
+  },
+
+  connectBtn: {
+    background: "black",
+    padding: "14px 20px",
+    borderRadius: 16,
+    color: "white",
+    border: "none",
+    fontSize: 18,
+    marginTop: 20,
+    zIndex: 2
   },
 
   app: {
@@ -269,11 +287,17 @@ const styles = {
     marginBottom: 15
   },
 
+  logo: {
+    width: 42,
+    height: 42,
+    borderRadius: "50%",
+    background: "linear-gradient(145deg,#ff7b00,#ffa640)"
+  },
+
   panel: {
     background: "#050b1e",
     borderRadius: 22,
-    padding: 18,
-    marginBottom: 10
+    padding: 18
   },
 
   apyBox: {
@@ -351,15 +375,5 @@ const styles = {
     border: "none",
     color: "white",
     fontSize: 18
-  },
-
-  connectBtn: {
-    background: "black",
-    padding: "14px 20px",
-    borderRadius: 16,
-    color: "white",
-    border: "none",
-    fontSize: 18,
-    marginTop: 20
   }
 };
