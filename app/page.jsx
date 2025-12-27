@@ -5,104 +5,190 @@ import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import BackgroundMatrix from "./components/BackgroundMatrix";
 
+// Base Aave + USDC
+const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913";
+const AAVE_POOL = "0x6Ae63C4E349A8675D8aC49f37b51f72dF6bD29c1";
+
+const ERC20_ABI = [
+  "function balanceOf(address owner) view returns (uint256)",
+  "function approve(address spender,uint256 amount) returns (bool)",
+  "function decimals() view returns (uint8)"
+];
+
+const AAVE_POOL_ABI = [
+  "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode)",
+  "function withdraw(address asset,uint256 amount,address to)",
+  "function getReserveData(address asset) view returns (uint256 configuration,uint128 liquidityIndex,uint128 currentLiquidityRate,uint128 variableBorrowIndex,uint128 currentVariableBorrowRate,uint128 stableBorrowRate,uint40 lastUpdateTimestamp,address aTokenAddress,uint8 id)"
+];
+
 export default function Home() {
   const [address, setAddress] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // UI States
   const [balance, setBalance] = useState(0);
   const [earnings, setEarnings] = useState(0);
-  const [apy] = useState(12);
+  const [apy, setApy] = useState(0);
+  const [depositAmount, setDepositAmount] = useState("");
 
-  // Fake Earnings Counter
+  // Load Aave APY after connect
+  const loadAaveData = async (provider) => {
+    try {
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_POOL_ABI, provider);
+      const data = await pool.getReserveData(USDC);
+      const liquidityRate = Number(data.currentLiquidityRate) / 1e27;
+      setApy((liquidityRate * 100).toFixed(2));
+    } catch (err) {
+      console.log("Error loading Aave data:", err);
+    }
+  };
+
+  // Live earnings counter
   useEffect(() => {
-    if (!address) return;
+    if (!address || balance <= 0 || apy <= 0) return;
+    const ratePerSec = (apy / 100) / 365 / 24 / 60 / 60;
     const interval = setInterval(() => {
-      setEarnings((e) => e + 0.00001);
+      setEarnings((prev) => prev + balance * ratePerSec);
     }, 1000);
     return () => clearInterval(interval);
-  }, [address]);
+  }, [address, balance, apy]);
 
+  // CONNECT WALLET
   const connectWallet = async () => {
-    if (typeof window === "undefined") return;
-
     try {
       setLoading(true);
-
       if (typeof localStorage !== "undefined") {
         localStorage.removeItem("wc@2:client:session");
         localStorage.removeItem("wc@2:core:pairing");
       }
-
       const { EthereumProvider } = await import(
         "@walletconnect/ethereum-provider"
       );
-
-      const wcProvider = await EthereumProvider.init({
+      const wc = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
-        chains: [1],
+        chains: [8453],
         showQrModal: true
       });
-
-      await wcProvider.connect();
-
-      const provider = new ethers.BrowserProvider(wcProvider);
+      await wc.connect();
+      const provider = new ethers.BrowserProvider(wc);
       const signer = await provider.getSigner();
       const addr = await signer.getAddress();
-
       setAddress(addr);
+      await loadAaveData(provider);
+
+      const token = new ethers.Contract(USDC, ERC20_ABI, provider);
+      const decimals = await token.decimals();
+      const bal = await token.balanceOf(addr);
+      setBalance(Number(ethers.formatUnits(bal, decimals)));
     } catch (err) {
-      console.error("Connect error:", err);
+      console.log("Connect error:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  // DEPOSIT via Aave
+  const deposit = async () => {
+    if (!depositAmount || Number(depositAmount) <= 0) {
+      alert("Enter an amount");
+      return;
+    }
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
+      const signer = await provider.getSigner();
+
+      const token = new ethers.Contract(USDC, ERC20_ABI, signer);
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_POOL_ABI, signer);
+
+      const dec = await token.decimals();
+      const value = ethers.parseUnits(depositAmount, dec);
+
+      await token.approve(AAVE_POOL, value);
+      await pool.supply(USDC, value, address, 0);
+
+      alert("Deposit successful!");
+      setBalance((b) => b + Number(depositAmount));
+      setDepositAmount("");
+    } catch (err) {
+      console.log("Deposit error:", err);
+      alert("Deposit failed");
+    }
+  };
+
+  // WITHDRAW via Aave
+  const withdraw = async () => {
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum || window.web3);
+      const signer = await provider.getSigner();
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_POOL_ABI, signer);
+      await pool.withdraw(USDC, ethers.MaxUint256, address);
+
+      alert("Withdraw successful!");
+      setBalance(0);
+      setEarnings(0);
+    } catch (err) {
+      console.log("Withdraw error:", err);
+      alert("Withdraw failed");
+    }
+  };
+
   return (
     <main style={styles.page}>
+      {/* Matrix Hintergrund */}
       <BackgroundMatrix />
+
+      {/* HEADER (X-QUO Style) */}
+      <div style={styles.topBar}>
+        <img src="/logo.png" style={styles.logoImg} />
+        <span style={styles.logoText}>DropSignal</span>
+
+        {address && (
+          <div style={styles.profile}>
+            {address.slice(0, 6)}...{address.slice(-4)}
+          </div>
+        )}
+      </div>
 
       {!address ? (
         <div style={styles.centerBox}>
-          <h1 style={styles.logo}>DropSignal</h1>
-          <p style={styles.sub}>Deposit • Earn • Signal</p>
-
+          <h1 style={styles.mainTitle}>Earn REAL Aave Yield on Base</h1>
           <button
             onClick={connectWallet}
             disabled={loading}
-            style={styles.connectButton(loading)}
+            style={styles.connectBtn(loading)}
           >
             {loading ? "Connecting..." : "Connect Wallet"}
           </button>
         </div>
       ) : (
-        <div style={styles.dashboardWrap}>
-          <h2 style={styles.title}>Dashboard</h2>
-          <p style={styles.connected}>
-            Connected: {address.slice(0, 6)}...{address.slice(-4)}
-          </p>
-
+        <div style={styles.dashboard}>
           <div style={styles.card}>
-            <p>Total Deposited:</p>
-            <h3>{balance.toFixed(2)} USDC</h3>
+            <p>Total Deposited</p>
+            <h2>{balance.toFixed(2)} USDC</h2>
           </div>
 
           <div style={styles.card}>
-            <p>Live Earnings:</p>
-            <h3>+{earnings.toFixed(6)} USDC</h3>
+            <p>Live Earnings</p>
+            <h2>+{earnings.toFixed(6)} USDC</h2>
           </div>
 
           <div style={styles.card}>
-            <p>APY:</p>
-            <h3>{apy}%</h3>
+            <p>Current APY</p>
+            <h2>{apy}%</h2>
           </div>
 
-          <div style={styles.buttonRow}>
-            <button style={styles.depositBtn}>
-              Deposit USDC
+          <input
+            type="number"
+            placeholder="Amount USDC"
+            value={depositAmount}
+            onChange={(e) => setDepositAmount(e.target.value)}
+            style={styles.input}
+          />
+
+          <div style={styles.btnRow}>
+            <button style={styles.depositBtn} onClick={deposit}>
+              Deposit
             </button>
-
-            <button style={styles.withdrawBtn}>
+            <button style={styles.withdrawBtn} onClick={withdraw}>
               Withdraw
             </button>
           </div>
@@ -112,99 +198,89 @@ export default function Home() {
   );
 }
 
-// ===================== STYLES =====================
 const styles = {
   page: {
     minHeight: "100vh",
-    width: "100%",
     position: "relative",
-    overflow: "hidden",
-    color: "white",
-    background: "#000"
+    background: "#ff7a00",
+    color: "#fff"
   },
-
-  centerBox: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
+  topBar: {
     display: "flex",
-    flexDirection: "column",
-    justifyContent: "center",
-    alignItems: "center"
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: "12px 16px"
   },
-
-  logo: {
-    fontSize: 40,
-    fontWeight: "900",
-    letterSpacing: 1
+  logoImg: {
+    width: 40,
+    height: 40,
+    borderRadius: "50%"
   },
-
-  sub: {
-    opacity: 0.8,
-    marginBottom: 20
+  logoText: {
+    fontSize: 20,
+    fontWeight: 800
   },
-
-  connectButton: (loading) => ({
-    padding: "14px 30px",
+  profile: {
+    padding: "6px 12px",
     borderRadius: 12,
-    border: "none",
+    background: "rgba(0,0,0,0.4)"
+  },
+  centerBox: {
+    textAlign: "center",
+    marginTop: 120
+  },
+  mainTitle: {
+    fontSize: 26,
+    fontWeight: 900,
+    marginBottom: 18
+  },
+  connectBtn: (loading) => ({
+    padding: "12px 24px",
+    borderRadius: 12,
+    background: "#000",
+    color: "#fff",
     fontSize: 18,
-    cursor: "pointer",
-    background: "linear-gradient(135deg,#00ffa6,#00b4ff)",
     opacity: loading ? 0.6 : 1
   }),
-
-  dashboardWrap: {
-    position: "relative",
-    zIndex: 5,
-    minHeight: "100vh",
-    paddingTop: 50,
-    textAlign: "center"
+  dashboard: {
+    textAlign: "center",
+    marginTop: 60
   },
-
-  title: {
-    fontSize: 34,
-    marginBottom: 10
-  },
-
-  connected: {
-    opacity: 0.7,
-    marginBottom: 25
-  },
-
   card: {
-    background: "rgba(0,0,0,0.6)",
-    borderRadius: 18,
-    padding: 20,
-    margin: "15px auto",
+    background: "rgba(0,0,0,0.4)",
+    padding: 18,
+    borderRadius: 14,
+    margin: "10px auto",
     width: "85%",
-    border: "1px solid rgba(255,255,255,0.2)",
-    backdropFilter: "blur(4px)"
+    border: "1px solid rgba(255,255,255,0.3)"
   },
-
-  buttonRow: {
-    marginTop: 25,
+  input: {
+    width: "80%",
+    padding: 12,
+    borderRadius: 10,
+    border: "none",
+    margin: "16px auto",
+    display: "block"
+  },
+  btnRow: {
     display: "flex",
     justifyContent: "center",
     gap: 12
   },
-
   depositBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "none",
+    padding: "12px 20px",
     background: "#00ff9c",
+    borderRadius: 12,
+    border: "none",
     color: "#000",
-    fontWeight: 700,
-    cursor: "pointer"
+    fontWeight: 700
   },
-
   withdrawBtn: {
-    padding: "14px 22px",
-    borderRadius: 14,
-    border: "1px solid white",
-    background: "transparent",
-    color: "white",
-    cursor: "pointer"
+    padding: "12px 20px",
+    background: "#ff0033",
+    borderRadius: 12,
+    border: "none",
+    color: "#fff",
+    fontWeight: 700
   }
 };
