@@ -167,7 +167,7 @@ export default function Page() {
   if (!address) {
     return (
       <div style={styles.wrapper}>
-        <div style={styles.grid}></div>
+        <div style={styles.animatedGrid}></div>
 
         <img
           src="/IMG_2690.jpeg"
@@ -195,6 +195,12 @@ export default function Page() {
             50% { box-shadow: 0 0 45px rgba(255,122,0,1), 0 0 90px rgba(255,122,0,0.7); }
             100% { box-shadow: 0 0 25px rgba(255,122,0,1), 0 0 60px rgba(255,122,0,0.45); }
           }
+
+          @keyframes backgroundMove {
+            0% { transform: translateY(0px); }
+            50% { transform: translateY(20px); }
+            100% { transform: translateY(0px); }
+          }
         `}</style>
       </div>
     );
@@ -202,7 +208,7 @@ export default function Page() {
 
   return (
     <div style={styles.app}>
-      <div style={styles.grid}></div>
+      <div style={styles.animatedGrid}></div>
 
       <div style={styles.topBar}>
         <div style={styles.logoGlow}>
@@ -222,8 +228,15 @@ export default function Page() {
         <Card title="Base APY" value={`${baseApy}%`} />
         <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
         <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
+
         <Card title="Balance" value={`${usdcBalance} USDC`} />
-        <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
+
+        <div style={styles.neonCard}>
+          <h3 style={{ color: "#00ffa6" }}>Live Earnings</h3>
+          <p style={styles.neonText}>
+            +{animatedEarnings.toFixed(6)} USDC
+          </p>
+        </div>
 
         {boostActive && (
           <Card
@@ -263,7 +276,7 @@ export default function Page() {
 
 function Card({ title, value, color }) {
   return (
-    <div style={styles.card}>
+    <div style={styles.cardGlow}>
       <h3>{title}</h3>
       <p style={{ fontSize: 26, color: color || "white" }}>{value}</p>
     </div>
@@ -313,12 +326,12 @@ const styles = {
     overflow: "hidden",
   },
 
-  grid: {
+  animatedGrid: {
     position: "absolute",
     inset: 0,
     background:
       "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
-    filter: "blur(0.7px)",
+    animation: "backgroundMove 12s ease-in-out infinite",
     zIndex: 0,
   },
 
@@ -335,16 +348,33 @@ const styles = {
     height: 44,
     borderRadius: "50%",
     overflow: "hidden",
-    boxShadow: "0 0 15px rgba(255,122,0,0.9), 0 0 40px rgba(255,122,0,0.5)",
-    animation: "pulseSmall 2.5s infinite ease-in-out"
+    boxShadow: "0 0 15px rgba(255,122,0,1), 0 0 40px rgba(255,122,0,0.6)",
+    animation: "pulseGlow 2.5s infinite ease-in-out",
   },
 
-  card: {
+  cardGlow: {
     background: "linear-gradient(145deg,#0b1436,#152f6b)",
     padding: 18,
     borderRadius: 16,
     position: "relative",
+    boxShadow: "0 0 20px rgba(0,255,166,.25)",
     zIndex: 2,
+  },
+
+  neonCard: {
+    background: "linear-gradient(145deg,#001b12,#003c29)",
+    padding: 18,
+    borderRadius: 18,
+    boxShadow:
+      "0 0 25px rgba(0,255,166,.4), inset 0 0 20px rgba(0,255,166,.2)",
+    zIndex: 2,
+  },
+
+  neonText: {
+    fontSize: 28,
+    color: "#00ffa6",
+    textShadow:
+      "0 0 10px #00ffa6, 0 0 20px #00ffa6, 0 0 40px #00ffa6",
   },
 
   connectBtn: {
@@ -375,7 +405,6 @@ const styles = {
     borderRadius: 12,
     border: "none",
     marginBottom: 10,
-    zIndex: 2,
   },
 
   actionBtn: {
@@ -384,6 +413,5 @@ const styles = {
     borderRadius: 12,
     border: "none",
     color: "white",
-    zIndex: 2,
   },
 };
