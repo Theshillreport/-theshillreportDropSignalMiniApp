@@ -108,7 +108,7 @@ export default function Page() {
             background: "#ff7b00",
           }}
         />
-        <h2>X-QUO</h2>
+        <h2>DropSignal</h2>
       </div>
 
       {!address ? (
