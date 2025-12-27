@@ -25,13 +25,19 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [apy] = useState(4.3); 
+  const [baseApy] = useState(4.3);
+
+  const [boostActive, setBoostActive] = useState(false);
+  const [boostApy, setBoostApy] = useState(0);
+  const [boostTime, setBoostTime] = useState(0);
+
   const [earnings, setEarnings] = useState(0);
+  const [animatedEarnings, setAnimatedEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
 
-  // ---------------- WALLET ----------------
+  // ================= WALLET =================
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -65,7 +71,7 @@ export default function Page() {
     }
   };
 
-  // ---------------- BALANCE ----------------
+  // ================= BALANCE =================
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -75,11 +81,10 @@ export default function Page() {
     } catch {}
   };
 
-  // ---------------- DEPOSIT ----------------
+  // ================= DEPOSIT =================
   const deposit = async () => {
     try {
-      if (!provider) return alert("Connect Wallet first");
-
+      if (!provider) return alert("Connect Wallet");
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(depositAmount, 6);
 
@@ -89,20 +94,18 @@ export default function Page() {
       const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
       await pool.supply(USDC, amount, address, 0);
 
-      setDepositedTotal((v) => v + Number(depositAmount));
+      setDepositedTotal(v => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
-
       loadUSDCBalance(provider, address);
     } catch {
       alert("Deposit Fehler");
     }
   };
 
-  // ---------------- WITHDRAW ----------------
+  // ================= WITHDRAW =================
   const withdraw = async () => {
     try {
-      if (!provider) return alert("Connect Wallet first");
-
+      if (!provider) return alert("Connect Wallet");
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(withdrawAmount, 6);
 
@@ -116,170 +119,275 @@ export default function Page() {
     }
   };
 
-  // ---------------- LIVE EARNINGS ENGINE ----------------
+  // ================= BOOST =================
+  const activateBoost = () => {
+    if (boostActive) return alert("Boost läuft bereits!");
+    setBoostActive(true);
+    setBoostApy(2.0);
+    setBoostTime(3600);
+    alert("BOOST aktiviert! 🔥 +2% APY für 60 Minuten");
+  };
+
+  useEffect(() => {
+    if (!boostActive) return;
+    if (boostTime <= 0) {
+      setBoostActive(false);
+      setBoostApy(0);
+      return;
+    }
+
+    const timer = setTimeout(() => setBoostTime(t => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [boostActive, boostTime]);
+
+  const totalApy = baseApy + boostApy;
+
+  // ================= REAL YIELD =================
   useEffect(() => {
     if (!depositedTotal) return;
 
-    const yearlyRate = apy / 100;
+    const yearlyRate = totalApy / 100;
     const perSecondRate = yearlyRate / (365 * 24 * 60 * 60);
 
     const interval = setInterval(() => {
-      setEarnings((e) => e + depositedTotal * perSecondRate);
+      setEarnings(e => e + depositedTotal * perSecondRate);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [depositedTotal, apy]);
+  }, [depositedTotal, totalApy]);
 
+  useEffect(() => {
+    let frame;
+    const animate = () => {
+      setAnimatedEarnings(prev => {
+        const diff = earnings - prev;
+        if (Math.abs(diff) < 0.0000001) return earnings;
+        return prev + diff * 0.08;
+      });
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [earnings]);
+
+  // ================= CONNECT SCREEN =================
+  if (!address) {
+    return (
+      <div style={styles.wrapper}>
+        <div style={styles.grid}></div>
+
+        <img
+          src="/logo.png"
+          alt="DropSignal Logo"
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            objectFit: "cover",
+            marginBottom: 15,
+            zIndex: 2,
+          }}
+        />
+
+        <h1>DropSignal</h1>
+        <p>USDC Yield auf Base</p>
+
+        <button onClick={connectWallet} style={styles.connectBtn}>
+          {loading ? "Connecting..." : "Connect Wallet"}
+        </button>
+      </div>
+    );
+  }
+
+  // ================= MAIN UI =================
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#050b1e",
-        color: "white",
-        padding: 20,
-        fontFamily: "system-ui",
-      }}
-    >
+    <div style={styles.app}>
+      <div style={styles.grid}></div>
 
-      {/* HEADER */}
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div
+      <div style={styles.topBar}>
+        <img
+          src="/logo.png"
+          alt="DropSignal Logo"
           style={{
             width: 42,
             height: 42,
             borderRadius: "50%",
-            background: "#ff7b00",
+            objectFit: "cover",
           }}
         />
         <h2>DropSignal</h2>
       </div>
 
-      {!address ? (
-        <button
-          onClick={connectWallet}
-          style={{
-            background: "#ff7b00",
-            padding: 12,
-            width: "100%",
-            borderRadius: 10,
-            border: "none",
-            color: "white",
-            fontSize: 16,
-            marginTop: 40,
-          }}
-        >
-          {loading ? "Connecting..." : "Connect Wallet"}
+      <p style={{ opacity: 0.7 }}>
+        {address.slice(0, 6)}...{address.slice(-4)}
+      </p>
+
+      <div style={{ marginTop: 20, display: "grid", gap: 15 }}>
+        <Card title="Base APY" value={`${baseApy}%`} />
+        <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
+        <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
+        <Card title="Balance" value={`${usdcBalance} USDC`} />
+        <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
+
+        {boostActive && (
+          <Card
+            title="Boost Time Left"
+            value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
+            color="#ff7b00"
+          />
+        )}
+      </div>
+
+      {!boostActive && (
+        <button onClick={activateBoost} style={styles.boostBtn}>
+          🚀 Activate Boost +2% APY
         </button>
-      ) : (
-        <>
-          <p style={{ marginTop: 20 }}>
-            Connected: {address.slice(0, 6)}...{address.slice(-4)}
-          </p>
-
-          {/* LIVE APY */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#0d1335",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Aave Live Yield</h3>
-            <p style={{ fontSize: 26 }}>{apy}%</p>
-          </div>
-
-          {/* BALANCE */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#0d1335",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Your USDC Balance</h3>
-            <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
-          </div>
-
-          {/* LIVE EARNINGS */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#13205c",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Live Earnings</h3>
-            <p style={{ fontSize: 26, color: "#00ffa6" }}>
-              +{earnings.toFixed(6)} USDC
-            </p>
-          </div>
-
-          {/* DEPOSIT */}
-          <div style={{ marginTop: 30 }}>
-            <input
-              placeholder="USDC Amount"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 10,
-                border: "none",
-                marginBottom: 10,
-              }}
-            />
-
-            <button
-              onClick={deposit}
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 10,
-                background: "green",
-                border: "none",
-                color: "white",
-                fontSize: 16,
-              }}
-            >
-              Deposit
-            </button>
-          </div>
-
-          {/* WITHDRAW */}
-          <div style={{ marginTop: 30 }}>
-            <input
-              placeholder="Withdraw Amount"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 10,
-                border: "none",
-                marginBottom: 10,
-              }}
-            />
-
-            <button
-              onClick={withdraw}
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 10,
-                background: "red",
-                border: "none",
-                color: "white",
-                fontSize: 16,
-              }}
-            >
-              Withdraw
-            </button>
-          </div>
-        </>
       )}
+
+      <InputBlock
+        value={depositAmount}
+        onChange={setDepositAmount}
+        action={deposit}
+        placeholder="Deposit USDC"
+        btnColor="green"
+        text="Deposit"
+      />
+
+      <InputBlock
+        value={withdrawAmount}
+        onChange={setWithdrawAmount}
+        action={withdraw}
+        placeholder="Withdraw USDC"
+        btnColor="red"
+        text="Withdraw"
+      />
     </div>
   );
 }
+
+// ================= UI COMPONENTS =================
+function Card({ title, value, color }) {
+  return (
+    <div style={styles.card}>
+      <h3>{title}</h3>
+      <p style={{ fontSize: 26, color: color || "white" }}>{value}</p>
+    </div>
+  );
+}
+
+function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
+  return (
+    <div style={{ marginTop: 25 }}>
+      <input
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={styles.input}
+      />
+      <button
+        onClick={action}
+        style={{ ...styles.actionBtn, background: btnColor }}
+      >
+        {text}
+      </button>
+    </div>
+  );
+}
+
+// ================= STYLES =================
+const styles = {
+  wrapper: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "white",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  app: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "white",
+    padding: 20,
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  grid: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
+    filter: "blur(0.7px)",
+    animation: "move 12s linear infinite",
+    zIndex: 0,
+  },
+
+  topBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    position: "relative",
+    zIndex: 2,
+  },
+
+  logo: {
+    width: 42,
+    height: 42,
+    borderRadius: "50%",
+  },
+
+  card: {
+    background: "linear-gradient(145deg,#0b1436,#152f6b)",
+    padding: 18,
+    borderRadius: 16,
+    position: "relative",
+    zIndex: 2,
+  },
+
+  connectBtn: {
+    background: "black",
+    padding: "14px 18px",
+    borderRadius: 14,
+    border: "none",
+    color: "white",
+    fontSize: 18,
+    marginTop: 25,
+    zIndex: 2,
+  },
+
+  boostBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 14,
+    background: "#ff7b00",
+    color: "white",
+    border: "none",
+    marginTop: 20,
+    fontSize: 18,
+  },
+
+  input: {
+    width: "100%",
+    padding: 12,
+    borderRadius: 12,
+    border: "none",
+    marginBottom: 10,
+    zIndex: 2,
+  },
+
+  actionBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    color: "white",
+    zIndex: 2,
+  },
+};
