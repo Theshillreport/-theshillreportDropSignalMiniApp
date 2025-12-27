@@ -3,16 +3,28 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
-const AAVE_POOL = "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73"; 
+const AAVE_POOL = "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73";
 const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bDA02913";
 
+const AAVE_ABI = [
+  "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode) external",
+  "function withdraw(address asset,uint256 amount,address to) external returns (uint256)"
+];
+
+const ERC20_ABI = [
+  "function approve(address spender,uint256 amount) external returns (bool)",
+  "function balanceOf(address owner) view returns (uint256)",
+  "function decimals() view returns (uint8)"
+];
+
 export default function Page() {
-  const [address, setAddress] = useState(null);
   const [provider, setProvider] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [address, setAddress] = useState(null);
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-  const [aaveAPY, setAaveAPY] = useState(null);
+  const [usdcBalance, setUsdcBalance] = useState("0");
+  const [aaveAPY, setAaveAPY] = useState("4.3%");
+  const [loading, setLoading] = useState(false);
 
   const connectWallet = async () => {
     try {
@@ -32,7 +44,6 @@ export default function Page() {
       });
 
       await wc.connect();
-
       const prov = new ethers.BrowserProvider(wc);
       setProvider(prov);
 
@@ -40,18 +51,21 @@ export default function Page() {
       const addr = await signer.getAddress();
       setAddress(addr);
 
-      loadAave();
-
+      loadUSDCBalance(prov, addr);
     } catch (err) {
-      console.log("Connect Error:", err);
+      console.log(err);
+      alert("Wallet Connection Error");
     } finally {
       setLoading(false);
     }
   };
 
-  const loadAave = async () => {
+  const loadUSDCBalance = async (prov, addr) => {
     try {
-      setAaveAPY("4.3%");
+      const signer = await prov.getSigner();
+      const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
+      const bal = await usdc.balanceOf(addr);
+      setUsdcBalance(Number(bal) / 1e6);
     } catch (err) {
       console.log(err);
     }
@@ -59,33 +73,40 @@ export default function Page() {
 
   const deposit = async () => {
     try {
-      if (!provider) return alert("Wallet not connected");
-
+      if (!provider) return alert("Connect Wallet first");
       const signer = await provider.getSigner();
 
-      const usdc = new ethers.Contract(
-        USDC,
-        ["function approve(address spender,uint256 value) public returns(bool)"],
-        signer
-      );
-
       const amount = ethers.parseUnits(depositAmount, 6);
+
+      const usdc = new ethers.Contract(USDC, ERC20_ABI, signer);
       await usdc.approve(AAVE_POOL, amount);
 
-      alert("Deposit sent");
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
+      await pool.supply(USDC, amount, address, 0);
+
+      alert("Deposit erfolgreich!");
+      loadUSDCBalance(provider, address);
     } catch (err) {
       console.log(err);
+      alert("Deposit Fehler");
     }
   };
 
   const withdraw = async () => {
     try {
-      if (!provider) return alert("Wallet not connected");
+      if (!provider) return alert("Connect Wallet first");
+      const signer = await provider.getSigner();
 
-      await provider.getSigner();
-      alert("Withdraw transaction triggered");
+      const amount = ethers.parseUnits(withdrawAmount, 6);
+
+      const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
+      await pool.withdraw(USDC, amount, address);
+
+      alert("Withdraw erfolgreich!");
+      loadUSDCBalance(provider, address);
     } catch (err) {
       console.log(err);
+      alert("Withdraw Fehler");
     }
   };
 
@@ -108,7 +129,7 @@ export default function Page() {
             background: "#ff7b00",
           }}
         />
-        <h2>DropSignal</h2>
+        <h2>X-QUO</h2>
       </div>
 
       {!address ? (
@@ -142,7 +163,19 @@ export default function Page() {
             }}
           >
             <h3>Aave Live Yield</h3>
-            <p style={{ fontSize: 26 }}>{aaveAPY || "Loading..."}</p>
+            <p style={{ fontSize: 26 }}>{aaveAPY}</p>
+          </div>
+
+          <div
+            style={{
+              marginTop: 20,
+              background: "#0d1335",
+              padding: 15,
+              borderRadius: 10,
+            }}
+          >
+            <h3>Your USDC Balance</h3>
+            <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
           </div>
 
           <div style={{ marginTop: 30 }}>
