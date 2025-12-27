@@ -3,10 +3,8 @@
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
-const AAVE_POOL =
-  "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73";
-const USDC =
-  "0x833589fCD6eDb6E08f4c7C32D4f71b54bDA02913";
+const AAVE_POOL = "0x76b026bEad8aA2D733E4cd602d7A44dE24a97c73";
+const USDC = "0x833589fCD6eDb6E08f4c7C32D4f71b54bDA02913";
 
 const AAVE_ABI = [
   "function supply(address asset,uint256 amount,address onBehalfOf,uint16 referralCode) external",
@@ -25,17 +23,21 @@ export default function Page() {
 
   const [depositAmount, setDepositAmount] = useState("");
   const [withdrawAmount, setWithdrawAmount] = useState("");
-
   const [usdcBalance, setUsdcBalance] = useState("0");
-  const [apy] = useState(6.31);
+
+  const [baseApy] = useState(4.3);
+
+  const [boostActive, setBoostActive] = useState(false);
+  const [boostApy, setBoostApy] = useState(0);
+  const [boostTime, setBoostTime] = useState(0);
 
   const [earnings, setEarnings] = useState(0);
-  const [deposited, setDeposited] = useState(0);
+  const [animatedEarnings, setAnimatedEarnings] = useState(0);
+  const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
-  const [tab, setTab] = useState("deposit");
 
-  // ---------------- WALLET ----------------
+  // ================= WALLET =================
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -45,18 +47,15 @@ export default function Page() {
         localStorage.removeItem("wc@2:core:pairing");
       }
 
-      const { EthereumProvider } = await import(
-        "@walletconnect/ethereum-provider"
-      );
+      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
 
       const wc = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
         chains: [8453],
-        showQrModal: true
+        showQrModal: true,
       });
 
       await wc.connect();
-
       const prov = new ethers.BrowserProvider(wc);
       setProvider(prov);
 
@@ -72,6 +71,7 @@ export default function Page() {
     }
   };
 
+  // ================= BALANCE =================
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -81,11 +81,10 @@ export default function Page() {
     } catch {}
   };
 
-  // ---------------- DEPOSIT ----------------
+  // ================= DEPOSIT =================
   const deposit = async () => {
     try {
       if (!provider) return alert("Connect Wallet");
-
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(depositAmount, 6);
 
@@ -95,7 +94,7 @@ export default function Page() {
       const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
       await pool.supply(USDC, amount, address, 0);
 
-      setDeposited(v => v + Number(depositAmount));
+      setDepositedTotal(v => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
       loadUSDCBalance(provider, address);
     } catch {
@@ -103,11 +102,10 @@ export default function Page() {
     }
   };
 
-  // ---------------- WITHDRAW ----------------
+  // ================= WITHDRAW =================
   const withdraw = async () => {
     try {
       if (!provider) return alert("Connect Wallet");
-
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(withdrawAmount, 6);
 
@@ -121,30 +119,77 @@ export default function Page() {
     }
   };
 
-  // ---------------- LIVE EARNINGS ----------------
-  useEffect(() => {
-    if (!deposited) return;
+  // ================= BOOST =================
+  const activateBoost = () => {
+    if (boostActive) return alert("Boost läuft bereits!");
+    setBoostActive(true);
+    setBoostApy(2.0);
+    setBoostTime(3600);
+    alert("BOOST aktiviert! 🔥 +2% APY für 60 Minuten");
+  };
 
-    const yearly = apy / 100;
-    const perSecond = yearly / (365 * 24 * 60 * 60);
+  useEffect(() => {
+    if (!boostActive) return;
+    if (boostTime <= 0) {
+      setBoostActive(false);
+      setBoostApy(0);
+      return;
+    }
+
+    const timer = setTimeout(() => setBoostTime(t => t - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [boostActive, boostTime]);
+
+  const totalApy = baseApy + boostApy;
+
+  // ================= LIVE EARNINGS =================
+  useEffect(() => {
+    if (!depositedTotal) return;
+
+    const yearlyRate = totalApy / 100;
+    const perSecondRate = yearlyRate / (365 * 24 * 60 * 60);
 
     const interval = setInterval(() => {
-      setEarnings(e => e + deposited * perSecond);
+      setEarnings(e => e + depositedTotal * perSecondRate);
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [deposited, apy]);
+  }, [depositedTotal, totalApy]);
 
-  // ---------------- CONNECT SCREEN (ALTES DESIGN) ----------------
+  useEffect(() => {
+    let frame;
+    const animate = () => {
+      setAnimatedEarnings(prev => {
+        const diff = earnings - prev;
+        if (Math.abs(diff) < 0.0000001) return earnings;
+        return prev + diff * 0.08;
+      });
+      frame = requestAnimationFrame(animate);
+    };
+    frame = requestAnimationFrame(animate);
+    return () => cancelAnimationFrame(frame);
+  }, [earnings]);
+
+  // ================= CONNECT SCREEN =================
   if (!address) {
     return (
       <div style={styles.wrapper}>
         <div style={styles.grid}></div>
 
-        <div style={styles.logoBig}></div>
+        {/* BIG LOGO */}
+        <img
+          src="/IMG_2690.jpeg"
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            objectFit: "cover",
+            zIndex: 2
+          }}
+        />
 
         <h1>DropSignal</h1>
-        <p style={{ opacity: 0.7 }}>USDC Yield auf Base</p>
+        <p>USDC Yield auf Base</p>
 
         <button onClick={connectWallet} style={styles.connectBtn}>
           {loading ? "Connecting..." : "Connect Wallet"}
@@ -153,82 +198,98 @@ export default function Page() {
     );
   }
 
-  // ---------------- AFTER CONNECT ----------------
+  // ================= MAIN UI =================
   return (
     <div style={styles.app}>
-      <div style={styles.top}>
-        <div style={styles.logo}></div>
-        <span style={{ opacity: 0.8 }}>
-          {address.slice(0, 6)}...{address.slice(-4)}
-        </span>
-      </div>
+      <div style={styles.grid}></div>
 
-      <div style={styles.panel}>
-        <p style={{ opacity: 0.7 }}>DEPOSIT USDC TO EARN</p>
-
-        <div style={styles.apyBox}>
-          <span style={{ fontSize: 28, color: "#00ff94" }}>
-            {apy}% APY
-          </span>
-        </div>
-
-        <div style={styles.boostRow}>
-          <div style={styles.boostCard}>WELCOME BOOST +0.00%</div>
-          <div style={styles.boostCard}>REFERRAL BOOST +0.00%</div>
-        </div>
-      </div>
-
-      <div style={styles.tabs}>
-        <button
-          style={tab === "deposit" ? styles.tabActive : styles.tab}
-          onClick={() => setTab("deposit")}
-        >
-          Deposit
-        </button>
-        <button
-          style={tab === "withdraw" ? styles.tabActive : styles.tab}
-          onClick={() => setTab("withdraw")}
-        >
-          Withdraw
-        </button>
-      </div>
-
-      {tab === "deposit" ? (
-        <>
-          <p style={{ opacity: 0.6 }}>
-            Available: {usdcBalance} USDC
-          </p>
-
-          <input
-            value={depositAmount}
-            onChange={(e) => setDepositAmount(e.target.value)}
-            placeholder="0.00"
-            style={styles.input}
+      <div style={styles.topBar}>
+        <div style={styles.logo}>
+          <img
+            src="/IMG_2690.jpeg"
+            style={{ width: "100%", height: "100%", objectFit: "cover" }}
           />
+        </div>
+        <h2>DropSignal</h2>
+      </div>
 
-          <button onClick={deposit} style={styles.depositBtn}>
-            Deposit
-          </button>
-        </>
-      ) : (
-        <>
-          <input
-            value={withdrawAmount}
-            onChange={(e) => setWithdrawAmount(e.target.value)}
-            placeholder="0.00"
-            style={styles.input}
+      <p style={{ opacity: 0.7 }}>
+        {address.slice(0, 6)}...{address.slice(-4)}
+      </p>
+
+      <div style={{ marginTop: 20, display: "grid", gap: 15 }}>
+        <Card title="Base APY" value={`${baseApy}%`} />
+        <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
+        <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
+        <Card title="Balance" value={`${usdcBalance} USDC`} />
+        <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
+
+        {boostActive && (
+          <Card
+            title="Boost Time Left"
+            value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
+            color="#ff7b00"
           />
+        )}
+      </div>
 
-          <button onClick={withdraw} style={styles.withdrawBtn}>
-            Withdraw
-          </button>
-        </>
+      {!boostActive && (
+        <button onClick={activateBoost} style={styles.boostBtn}>
+          🚀 Activate Boost +2% APY
+        </button>
       )}
+
+      <InputBlock
+        value={depositAmount}
+        onChange={setDepositAmount}
+        action={deposit}
+        placeholder="Deposit USDC"
+        btnColor="green"
+        text="Deposit"
+      />
+
+      <InputBlock
+        value={withdrawAmount}
+        onChange={setWithdrawAmount}
+        action={withdraw}
+        placeholder="Withdraw USDC"
+        btnColor="red"
+        text="Withdraw"
+      />
     </div>
   );
 }
 
-// ---------------- STYLES ----------------
+// ================= UI COMPONENTS =================
+function Card({ title, value, color }) {
+  return (
+    <div style={styles.card}>
+      <h3>{title}</h3>
+      <p style={{ fontSize: 26, color: color || "white" }}>{value}</p>
+    </div>
+  );
+}
+
+function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
+  return (
+    <div style={{ marginTop: 25 }}>
+      <input
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={styles.input}
+      />
+      <button
+        onClick={action}
+        style={{ ...styles.actionBtn, background: btnColor }}
+      >
+        {text}
+      </button>
+    </div>
+  );
+}
+
+// ================= STYLES =================
 const styles = {
   wrapper: {
     minHeight: "100vh",
@@ -240,7 +301,17 @@ const styles = {
     justifyContent: "center",
     fontFamily: "system-ui",
     position: "relative",
-    overflow: "hidden"
+    overflow: "hidden",
+  },
+
+  app: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "white",
+    padding: 20,
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden",
   },
 
   grid: {
@@ -249,131 +320,73 @@ const styles = {
     background:
       "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
     filter: "blur(0.7px)",
-    zIndex: 0
+    animation: "move 12s linear infinite",
+    zIndex: 0,
   },
 
-  logoBig: {
-    width: 120,
-    height: 120,
-    borderRadius: "50%",
-    background: "white",
-    marginBottom: 15,
-    zIndex: 2
-  },
-
-  connectBtn: {
-    background: "black",
-    padding: "14px 20px",
-    borderRadius: 16,
-    color: "white",
-    border: "none",
-    fontSize: 18,
-    marginTop: 20,
-    zIndex: 2
-  },
-
-  app: {
-    minHeight: "100vh",
-    background: "#020617",
-    color: "white",
-    padding: 18,
-    fontFamily: "system-ui"
-  },
-
-  top: {
+  topBar: {
     display: "flex",
-    justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: 15
+    gap: 10,
+    position: "relative",
+    zIndex: 2,
   },
 
   logo: {
     width: 42,
     height: 42,
     borderRadius: "50%",
-    background: "linear-gradient(145deg,#ff7b00,#ffa640)"
-  },
-
-  panel: {
-    background: "#050b1e",
-    borderRadius: 22,
-    padding: 18
-  },
-
-  apyBox: {
-    marginTop: 8,
-    marginBottom: 18
-  },
-
-  boostRow: {
+    overflow: "hidden",
     display: "flex",
-    gap: 8
+    alignItems: "center",
+    justifyContent: "center"
   },
 
-  boostCard: {
-    flex: 1,
-    background: "#0a122b",
-    borderRadius: 12,
-    padding: 10,
-    fontSize: 12,
-    opacity: 0.8,
-    textAlign: "center"
+  card: {
+    background: "linear-gradient(145deg,#0b1436,#152f6b)",
+    padding: 18,
+    borderRadius: 16,
+    position: "relative",
+    zIndex: 2,
   },
 
-  tabs: {
-    display: "flex",
-    gap: 10,
-    marginTop: 15
-  },
-
-  tab: {
-    flex: 1,
-    background: "#0a0a0a",
-    borderRadius: 20,
-    padding: 10,
+  connectBtn: {
+    background: "black",
+    padding: "14px 18px",
+    borderRadius: 14,
+    border: "none",
     color: "white",
-    border: "none"
+    fontSize: 18,
+    marginTop: 25,
+    zIndex: 2,
   },
 
-  tabActive: {
-    flex: 1,
-    background: "white",
-    color: "black",
-    borderRadius: 20,
-    padding: 10,
-    border: "none"
+  boostBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 14,
+    background: "#ff7b00",
+    color: "white",
+    border: "none",
+    marginTop: 20,
+    fontSize: 18,
   },
 
   input: {
     width: "100%",
-    padding: 14,
-    marginTop: 15,
-    borderRadius: 14,
+    padding: 12,
+    borderRadius: 12,
     border: "none",
-    background: "#0a0a0a",
-    color: "white",
-    fontSize: 18
+    marginBottom: 10,
+    zIndex: 2,
   },
 
-  depositBtn: {
+  actionBtn: {
     width: "100%",
-    background: "green",
-    marginTop: 15,
     padding: 14,
-    borderRadius: 14,
+    borderRadius: 12,
     border: "none",
     color: "white",
-    fontSize: 18
+    zIndex: 2,
   },
-
-  withdrawBtn: {
-    width: "100%",
-    background: "red",
-    marginTop: 15,
-    padding: 14,
-    borderRadius: 14,
-    border: "none",
-    color: "white",
-    fontSize: 18
-  }
 };
