@@ -32,7 +32,7 @@ export default function Page() {
 
   const [loading, setLoading] = useState(false);
 
-  // WALLET CONNECT
+  // ================= WALLET CONNECT =================
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -66,7 +66,7 @@ export default function Page() {
     }
   };
 
-  // BALANCE
+  // ================= BALANCE =================
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -76,7 +76,7 @@ export default function Page() {
     } catch {}
   };
 
-  // DEPOSIT
+  // ================= DEPOSIT =================
   const deposit = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -99,7 +99,7 @@ export default function Page() {
     }
   };
 
-  // WITHDRAW
+  // ================= WITHDRAW =================
   const withdraw = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -117,7 +117,7 @@ export default function Page() {
     }
   };
 
-  // REAL LIVE YIELD ENGINE
+  // ================= REAL YIELD =================
   useEffect(() => {
     if (!depositedTotal) return;
 
@@ -131,14 +131,14 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [depositedTotal, apy]);
 
-  // SMOOTH ANIMATION LIKE X-QUO
+  // ================= SMOOTH ANIMATION =================
   useEffect(() => {
     let frame;
     const animate = () => {
       setAnimatedEarnings((prev) => {
         const diff = earnings - prev;
         if (Math.abs(diff) < 0.0000001) return earnings;
-        return prev + diff * 0.08; // smooth easing
+        return prev + diff * 0.08;
       });
       frame = requestAnimationFrame(animate);
     };
@@ -146,90 +146,30 @@ export default function Page() {
     return () => cancelAnimationFrame(frame);
   }, [earnings]);
 
-  // =================== UI ===================
-
+  // ================= UI WHEN NOT CONNECTED =================
   if (!address) {
     return (
-      <div
-        style={{
-          minHeight: "100vh",
-          background: "linear-gradient(180deg,#ff9a2b,#ff7b00)",
-          color: "white",
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          justifyContent: "center",
-          fontFamily: "system-ui",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        {[...Array(30)].map((_, i) => (
-          <span
-            key={i}
-            style={{
-              position: "absolute",
-              fontSize: Math.random() * 24 + 12,
-              opacity: 0.25,
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-          >
-            $
-          </span>
-        ))}
+      <div style={styles.wrapper}>
+        <div style={styles.grid}></div>
 
-        <div
-          style={{
-            width: 120,
-            height: 120,
-            borderRadius: "50%",
-            background: "white",
-            marginBottom: 15,
-          }}
-        />
-
+        <div style={styles.logoBig}></div>
         <h1 style={{ fontSize: 34 }}>DropSignal</h1>
         <p>USDC Yield auf Base</p>
 
-        <button
-          onClick={connectWallet}
-          style={{
-            background: "black",
-            padding: "14px 18px",
-            borderRadius: 14,
-            border: "none",
-            color: "white",
-            fontSize: 18,
-            marginTop: 25,
-          }}
-        >
+        <button onClick={connectWallet} style={styles.connectBtn}>
           {loading ? "Connecting..." : "Connect Wallet"}
         </button>
       </div>
     );
   }
 
+  // ================= MAIN UI =================
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        background: "#020617",
-        color: "white",
-        padding: 20,
-        fontFamily: "system-ui",
-      }}
-    >
-      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <div
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: "50%",
-            background: "linear-gradient(145deg,#ff7b00,#ffa640)",
-            boxShadow: "0 0 25px #ff7b0080",
-          }}
-        />
+    <div style={styles.app}>
+      <div style={styles.grid}></div>
+
+      <div style={styles.topBar}>
+        <div style={styles.logo}></div>
         <h2>DropSignal</h2>
       </div>
 
@@ -238,98 +178,156 @@ export default function Page() {
       </p>
 
       <div style={{ marginTop: 25, display: "grid", gap: 15 }}>
-        <div
-          style={{
-            background: "linear-gradient(135deg,#0d1335,#1a2c6b)",
-            padding: 18,
-            borderRadius: 16,
-            boxShadow: "0px 0px 30px #132e7a50",
-          }}
-        >
-          <h3>Aave APY</h3>
-          <p style={{ fontSize: 32, color: "#00ffa6" }}>{apy}%</p>
-        </div>
-
-        <div
-          style={{
-            background: "linear-gradient(135deg,#0d1335,#13205c)",
-            padding: 18,
-            borderRadius: 16,
-          }}
-        >
-          <h3>Balance</h3>
-          <p style={{ fontSize: 26 }}>{usdcBalance} USDC</p>
-        </div>
-
-        <div
-          style={{
-            background: "linear-gradient(135deg,#071b2e,#0f3052)",
-            padding: 18,
-            borderRadius: 16,
-          }}
-        >
-          <h3>Live Earnings</h3>
-          <p style={{ fontSize: 28, color: "#00ffa6" }}>
-            +{animatedEarnings.toFixed(6)} USDC
-          </p>
-        </div>
+        <Card title="Aave APY" value={`${apy}%`} color="#00ffa6" />
+        <Card title="Balance" value={`${usdcBalance} USDC`} />
+        <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
       </div>
 
-      <div style={{ marginTop: 30 }}>
-        <input
-          placeholder="Deposit USDC"
-          value={depositAmount}
-          onChange={(e) => setDepositAmount(e.target.value)}
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 12,
-            border: "none",
-            marginBottom: 10,
-          }}
-        />
-        <button
-          onClick={deposit}
-          style={{
-            width: "100%",
-            padding: 14,
-            borderRadius: 12,
-            background: "green",
-            border: "none",
-            color: "white",
-          }}
-        >
-          Deposit
-        </button>
-      </div>
+      <InputBlock
+        value={depositAmount}
+        onChange={setDepositAmount}
+        action={deposit}
+        placeholder="Deposit USDC"
+        btnColor="green"
+        text="Deposit"
+      />
 
-      <div style={{ marginTop: 30 }}>
-        <input
-          placeholder="Withdraw USDC"
-          value={withdrawAmount}
-          onChange={(e) => setWithdrawAmount(e.target.value)}
-          style={{
-            width: "100%",
-            padding: 12,
-            borderRadius: 12,
-            border: "none",
-            marginBottom: 10,
-          }}
-        />
-        <button
-          onClick={withdraw}
-          style={{
-            width: "100%",
-            padding: 14,
-            borderRadius: 12,
-            background: "red",
-            border: "none",
-            color: "white",
-          }}
-        >
-          Withdraw
-        </button>
-      </div>
+      <InputBlock
+        value={withdrawAmount}
+        onChange={setWithdrawAmount}
+        action={withdraw}
+        placeholder="Withdraw USDC"
+        btnColor="red"
+        text="Withdraw"
+      />
     </div>
   );
 }
+
+// ================= SMALL UI COMPONENTS =================
+
+function Card({ title, value, color }) {
+  return (
+    <div style={styles.card}>
+      <h3>{title}</h3>
+      <p style={{ fontSize: 28, color: color || "white" }}>{value}</p>
+    </div>
+  );
+}
+
+function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
+  return (
+    <div style={{ marginTop: 30 }}>
+      <input
+        placeholder={placeholder}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={styles.input}
+      />
+      <button
+        onClick={action}
+        style={{ ...styles.actionBtn, background: btnColor }}
+      >
+        {text}
+      </button>
+    </div>
+  );
+}
+
+// ================= STYLES =================
+const styles = {
+  wrapper: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "white",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+    justifyContent: "center",
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  app: {
+    minHeight: "100vh",
+    background: "#020617",
+    color: "white",
+    padding: 20,
+    fontFamily: "system-ui",
+    position: "relative",
+    overflow: "hidden",
+  },
+
+  grid: {
+    position: "absolute",
+    inset: 0,
+    background:
+      "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
+    filter: "blur(0.7px)",
+    animation: "move 12s linear infinite",
+    zIndex: 0,
+  },
+
+  topBar: {
+    display: "flex",
+    alignItems: "center",
+    gap: 10,
+    position: "relative",
+    zIndex: 2,
+  },
+
+  logo: {
+    width: 42,
+    height: 42,
+    borderRadius: "50%",
+    background: "linear-gradient(145deg,#ff7b00,#ffa640)",
+    boxShadow: "0 0 25px #ff7b0080",
+  },
+
+  logoBig: {
+    width: 120,
+    height: 120,
+    borderRadius: "50%",
+    background: "white",
+    marginBottom: 15,
+    zIndex: 2,
+  },
+
+  card: {
+    background: "linear-gradient(145deg,#0b1436,#152f6b)",
+    padding: 18,
+    borderRadius: 16,
+    position: "relative",
+    zIndex: 2,
+  },
+
+  connectBtn: {
+    background: "black",
+    padding: "14px 18px",
+    borderRadius: 14,
+    border: "none",
+    color: "white",
+    fontSize: 18,
+    marginTop: 25,
+    zIndex: 2,
+  },
+
+  input: {
+    width: "100%",
+    padding: 12,
+    borderRadius: 12,
+    border: "none",
+    marginBottom: 10,
+    zIndex: 2,
+  },
+
+  actionBtn: {
+    width: "100%",
+    padding: 14,
+    borderRadius: 12,
+    border: "none",
+    color: "white",
+    zIndex: 2,
+  },
+};
