@@ -1,4 +1,6 @@
 export const revalidate = false;
+
+export const metadata = {
   title: "Drop Signal Mini App",
   description: "Deposit USDC · Earn Yield · Built on Base",
 };
