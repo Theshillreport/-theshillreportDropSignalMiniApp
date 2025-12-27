@@ -25,68 +25,17 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [baseApy] = useState(4.3);
-
-  const [boostActive, setBoostActive] = useState(false);
-  const [boostApy, setBoostApy] = useState(0);
-  const [boostTime, setBoostTime] = useState(0);
-
-  const [referrer, setReferrer] = useState(null);
-  const [myInviteLink, setMyInviteLink] = useState("");
-
+  const [apy] = useState(4.3);
   const [earnings, setEarnings] = useState(0);
-  const [animatedEarnings, setAnimatedEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
 
-  // ===== LEADERBOARD =====
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [myRank, setMyRank] = useState(null);
+  const myInviteLink = address
+    ? `https://dropsignal.vercel.app/?ref=${address}`
+    : "";
 
-  const updateLeaderboard = (wallet) => {
-    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
-
-    const entryIndex = board.findIndex(x => x.addr === wallet);
-    if (entryIndex >= 0) {
-      board[entryIndex].score += 1;
-    } else {
-      board.push({ addr: wallet, score: 1 });
-    }
-
-    board.sort((a, b) => b.score - a.score);
-
-    localStorage.setItem("dropsignal_board", JSON.stringify(board));
-    setLeaderboard(board);
-  };
-
-  const loadLeaderboard = () => {
-    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
-    board.sort((a, b) => b.score - a.score);
-    setLeaderboard(board);
-  };
-
-  const updateMyRank = (addr) => {
-    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
-    board.sort((a, b) => b.score - a.score);
-    const index = board.findIndex(x => x.addr === addr);
-    if (index >= 0) setMyRank(index + 1);
-  };
-
-  // ===== REF PARAM =====
-  useEffect(() => {
-    loadLeaderboard();
-    const urlParams = new URLSearchParams(window.location.search);
-    const ref = urlParams.get("ref");
-    if (ref && !localStorage.getItem("referrer")) {
-      localStorage.setItem("referrer", ref);
-      setReferrer(ref);
-    } else {
-      setReferrer(localStorage.getItem("referrer"));
-    }
-  }, []);
-
-  // ===== WALLET =====
+  // ---------------- WALLET ----------------
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -96,7 +45,9 @@ export default function Page() {
         localStorage.removeItem("wc@2:core:pairing");
       }
 
-      const { EthereumProvider } = await import("@walletconnect/ethereum-provider");
+      const { EthereumProvider } = await import(
+        "@walletconnect/ethereum-provider"
+      );
 
       const wc = await EthereumProvider.init({
         projectId: "6a6f915ce160625cbc11e74f7bc284e0",
@@ -113,14 +64,6 @@ export default function Page() {
       setAddress(addr);
 
       loadUSDCBalance(prov, addr);
-      setMyInviteLink(`${window.location.origin}?ref=${addr}`);
-      updateMyRank(addr);
-
-      if (referrer && referrer !== addr) {
-        activateReferralBoost();
-        updateLeaderboard(referrer);
-      }
-
     } catch {
       alert("Wallet Verbindung fehlgeschlagen");
     } finally {
@@ -128,7 +71,7 @@ export default function Page() {
     }
   };
 
-  // ===== BALANCE =====
+  // ---------------- BALANCE ----------------
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -138,7 +81,7 @@ export default function Page() {
     } catch {}
   };
 
-  // ===== DEPOSIT =====
+  // ---------------- DEPOSIT ----------------
   const deposit = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -152,15 +95,16 @@ export default function Page() {
       const pool = new ethers.Contract(AAVE_POOL, AAVE_ABI, signer);
       await pool.supply(USDC, amount, address, 0);
 
-      setDepositedTotal(v => v + Number(depositAmount));
+      setDepositedTotal((v) => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
+
       loadUSDCBalance(provider, address);
     } catch {
       alert("Deposit Fehler");
     }
   };
 
-  // ===== WITHDRAW =====
+  // ---------------- WITHDRAW ----------------
   const withdraw = async () => {
     try {
       if (!provider) return alert("Connect Wallet first");
@@ -178,279 +122,232 @@ export default function Page() {
     }
   };
 
-  // ===== BOOST =====
-  const activateBoost = () => {
-    if (boostActive) {
-      setBoostTime(t => t + 3600);
-      alert("Boost verlängert um 1 Stunde!");
-      return;
-    }
-    setBoostActive(true);
-    setBoostApy(2);
-    setBoostTime(3600);
-    alert("🚀 Boost aktiviert! +2% APY");
-  };
-
-  const activateReferralBoost = () => {
-    if (boostActive) setBoostTime(t => t + 7200);
-    else {
-      setBoostActive(true);
-      setBoostApy(2);
-      setBoostTime(7200);
-    }
-  };
-
-  useEffect(() => {
-    if (!boostActive) return;
-    if (boostTime <= 0) {
-      setBoostActive(false);
-      setBoostApy(0);
-      return;
-    }
-    const timer = setTimeout(() => setBoostTime(t => t - 1), 1000);
-    return () => clearTimeout(timer);
-  }, [boostActive, boostTime]);
-
-  const totalApy = baseApy + boostApy;
-
-  // ===== REALTIME EARNINGS =====
+  // ---------------- LIVE EARNINGS ----------------
   useEffect(() => {
     if (!depositedTotal) return;
-    const yearlyRate = totalApy / 100;
+
+    const yearlyRate = apy / 100;
     const perSecondRate = yearlyRate / (365 * 24 * 60 * 60);
-    const interval = setInterval(
-      () => setEarnings(e => e + depositedTotal * perSecondRate),
-      1000
-    );
+
+    const interval = setInterval(() => {
+      setEarnings((e) => e + depositedTotal * perSecondRate);
+    }, 1000);
+
     return () => clearInterval(interval);
-  }, [depositedTotal, totalApy]);
+  }, [depositedTotal, apy]);
 
-  useEffect(() => {
-    let frame;
-    const animate = () => {
-      setAnimatedEarnings(prev => {
-        const diff = earnings - prev;
-        if (Math.abs(diff) < 0.0000001) return earnings;
-        return prev + diff * 0.08;
-      });
-      frame = requestAnimationFrame(animate);
-    };
-    frame = requestAnimationFrame(animate);
-    return () => cancelAnimationFrame(frame);
-  }, [earnings]);
-
-  // ===== CONNECT SCREEN =====
-  if (!address) {
-    return (
-      <div style={styles.wrapper}>
-        <div style={styles.grid}></div>
-        <div style={styles.logoBig}></div>
-        <h1>DropSignal</h1>
-        <p>Earn USDC Yield on Base</p>
-        <button onClick={connectWallet} style={styles.connectBtn}>
-          {loading ? "Connecting..." : "Connect Wallet"}
-        </button>
-      </div>
-    );
-  }
-
-  // ===== MAIN UI =====
   return (
-    <div style={styles.app}>
-      <div style={styles.grid}></div>
-
-      <div style={styles.topBar}>
-        <div style={styles.logo}></div>
+    <div
+      style={{
+        minHeight: "100vh",
+        background: "#050b1e",
+        color: "white",
+        padding: 20,
+        fontFamily: "system-ui",
+      }}
+    >
+      {/* HEADER */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <div
+          style={{
+            width: 42,
+            height: 42,
+            borderRadius: "50%",
+            background: "#ff7b00",
+          }}
+        />
         <h2>DropSignal</h2>
       </div>
 
-      <p style={{ opacity: 0.7 }}>
-        {address.slice(0, 6)}...{address.slice(-4)}
-      </p>
-
-      {/* CARDS */}
-      <Card title="Base APY" value={`${baseApy}%`} />
-      <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
-      <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
-      <Card title="Balance" value={`${usdcBalance} USDC`} />
-      <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
-
-      {boostActive && (
-        <Card
-          title="Boost Time Left"
-          value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
-          color="#ff7b00"
-        />
-      )}
-
-      {/* BOOST BTN */}
-      {!boostActive && (
-        <button onClick={activateBoost} style={styles.boostBtn}>
-          🚀 Activate Boost +2% APY
-        </button>
-      )}
-
-      {/* INVITE */}
-      <div style={styles.card}>
-        <h3>Invite Friends = Earn More</h3>
-        <p>You & your friend get +2% Boost</p>
-        <input
-          value={myInviteLink}
-          readOnly
-          style={styles.input}
-          onClick={() => {
-            navigator.clipboard.writeText(myInviteLink);
-            alert("Invite Link copied!");
-          }}
-        />
-      </div>
-
-      {/* LEADERBOARD */}
-      <div style={styles.card}>
-        <h3>🏆 Leaderboard</h3>
-
-        {leaderboard.slice(0, 3).map((p, i) => (
-          <p key={i}>
-            #{i + 1} — {p.addr.slice(0, 5)}...{p.addr.slice(-3)} 🔥 {p.score}
+      {!address ? (
+        <>
+          <p style={{ marginTop: 25, opacity: 0.8 }}>
+            Deposit USDC → Earn Real Yield on Base
           </p>
-        ))}
 
-        {myRank && (
-          <p style={{ marginTop: 10, color: "#00ffa6" }}>
-            Your Rank: #{myRank}
+          <button
+            onClick={connectWallet}
+            style={{
+              background: "#ff7b00",
+              padding: 12,
+              width: "100%",
+              borderRadius: 10,
+              border: "none",
+              color: "white",
+              fontSize: 16,
+              marginTop: 40,
+            }}
+          >
+            {loading ? "Connecting..." : "Connect Wallet"}
+          </button>
+        </>
+      ) : (
+        <>
+          <p style={{ marginTop: 20 }}>
+            Connected: {address.slice(0, 6)}...{address.slice(-4)}
           </p>
-        )}
-      </div>
 
-      {/* INPUT BLOCKS */}
-      <InputBlock value={depositAmount} onChange={setDepositAmount} action={deposit} placeholder="Deposit USDC" btnColor="green" text="Deposit" />
-      <InputBlock value={withdrawAmount} onChange={setWithdrawAmount} action={withdraw} placeholder="Withdraw USDC" btnColor="red" text="Withdraw" />
+          {/* APY */}
+          <div style={card}>
+            <h3>Aave Live Yield</h3>
+            <p style={{ fontSize: 26 }}>{apy}%</p>
+          </div>
+
+          {/* BALANCE */}
+          <div style={card}>
+            <h3>Your USDC Balance</h3>
+            <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
+          </div>
+
+          {/* EARNINGS */}
+          <div style={{ ...card, background: "#13205c" }}>
+            <h3>Live Earnings</h3>
+            <p style={{ fontSize: 26, color: "#00ffa6" }}>
+              +{earnings.toFixed(6)} USDC
+            </p>
+          </div>
+
+          {/* DEPOSIT */}
+          <div style={{ marginTop: 30 }}>
+            <input
+              placeholder="USDC Amount"
+              value={depositAmount}
+              onChange={(e) => setDepositAmount(e.target.value)}
+              style={input}
+            />
+            <button style={greenBtn} onClick={deposit}>
+              Deposit
+            </button>
+          </div>
+
+          {/* WITHDRAW */}
+          <div style={{ marginTop: 30 }}>
+            <input
+              placeholder="Withdraw Amount"
+              value={withdrawAmount}
+              onChange={(e) => setWithdrawAmount(e.target.value)}
+              style={input}
+            />
+            <button style={redBtn} onClick={withdraw}>
+              Withdraw
+            </button>
+          </div>
+
+          {/* SOCIAL SHARE */}
+          <div style={card}>
+            <h3>📢 Share & Go Viral</h3>
+
+            <button
+              style={twitter}
+              onClick={() => {
+                if (!myInviteLink) return alert("Connect first");
+                const text = encodeURIComponent(
+                  "I'm earning boosted USDC yield with DropSignal on Base 🚀 Join my team & get +2% boost!"
+                );
+                const url = encodeURIComponent(myInviteLink);
+                window.open(
+                  `https://twitter.com/intent/tweet?text=${text}&url=${url}`,
+                  "_blank"
+                );
+              }}
+            >
+              🐦 Share on X / Twitter
+            </button>
+
+            <button
+              style={warpcast}
+              onClick={() => {
+                if (!myInviteLink) return alert("Connect first");
+                const text =
+                  "Earning boosted USDC yield with DropSignal on Base 🚀 Join & get +2% boost: " +
+                  myInviteLink;
+                window.location.href =
+                  "farcaster://compose?text=" + encodeURIComponent(text);
+              }}
+            >
+              💜 Share on Farcaster
+            </button>
+
+            <button
+              style={copyBtn}
+              onClick={() => {
+                if (!myInviteLink) return alert("Connect first");
+                navigator.clipboard.writeText(myInviteLink);
+                alert("Copied Invite Link!");
+              }}
+            >
+              📋 Copy Invite Link
+            </button>
+          </div>
+        </>
+      )}
     </div>
   );
 }
 
-// ===== UI COMPONENTS =====
-function Card({ title, value, color }) {
-  return (
-    <div style={styles.card}>
-      <h3>{title}</h3>
-      <p style={{ fontSize: 26, color: color || "white" }}>{value}</p>
-    </div>
-  );
-}
+const card = {
+  marginTop: 20,
+  background: "#0d1335",
+  padding: 15,
+  borderRadius: 10,
+};
 
-function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
-  return (
-    <div style={{ marginTop: 25 }}>
-      <input
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={styles.input}
-      />
-      <button onClick={action} style={{ ...styles.actionBtn, background: btnColor }}>
-        {text}
-      </button>
-    </div>
-  );
-}
+const input = {
+  width: "100%",
+  padding: 10,
+  borderRadius: 10,
+  border: "none",
+  marginBottom: 10,
+};
 
-// ===== STYLES =====
-const styles = {
-  wrapper: {
-    minHeight: "100vh",
-    background: "#020617",
-    color: "white",
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    fontFamily: "system-ui",
-    position: "relative",
-    overflow: "hidden",
-  },
-  app: {
-    minHeight: "100vh",
-    background: "#020617",
-    color: "white",
-    padding: 20,
-    fontFamily: "system-ui",
-    position: "relative",
-    overflow: "hidden",
-  },
-  grid: {
-    position: "absolute",
-    inset: 0,
-    background:
-      "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
-    filter: "blur(0.7px)",
-    animation: "move 12s linear infinite",
-    zIndex: 0,
-  },
-  topBar: {
-    display: "flex",
-    alignItems: "center",
-    gap: 10,
-    position: "relative",
-    zIndex: 2,
-  },
-  logo: {
-    width: 42,
-    height: 42,
-    borderRadius: "50%",
-    background: "linear-gradient(145deg,#ff7b00,#ffa640)",
-    boxShadow: "0 0 25px #ff7b0080",
-  },
-  logoBig: {
-    width: 120,
-    height: 120,
-    borderRadius: "50%",
-    background: "white",
-    marginBottom: 15,
-    zIndex: 2,
-  },
-  card: {
-    background: "linear-gradient(145deg,#0b1436,#152f6b)",
-    padding: 18,
-    borderRadius: 16,
-    position: "relative",
-    zIndex: 2,
-    marginTop: 15,
-  },
-  connectBtn: {
-    background: "black",
-    padding: "14px 18px",
-    borderRadius: 14,
-    border: "none",
-    color: "white",
-    fontSize: 18,
-    marginTop: 25,
-    zIndex: 2,
-  },
-  boostBtn: {
-    width: "100%",
-    padding: 14,
-    borderRadius: 14,
-    background: "#ff7b00",
-    color: "white",
-    border: "none",
-    marginTop: 20,
-    fontSize: 18,
-  },
-  input: {
-    width: "100%",
-    padding: 12,
-    borderRadius: 12,
-    border: "none",
-    marginBottom: 10,
-    zIndex: 2,
-  },
-  actionBtn: {
-    width: "100%",
-    padding: 14,
-    borderRadius: 12,
-    border: "none",
-    color: "white",
-    zIndex: 2,
-  },
+const greenBtn = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  background: "green",
+  border: "none",
+  color: "white",
+  fontSize: 16,
+};
+
+const redBtn = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 10,
+  background: "red",
+  border: "none",
+  color: "white",
+  fontSize: 16,
+};
+
+const twitter = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 12,
+  border: "none",
+  background: "#1DA1F2",
+  color: "white",
+  fontSize: 16,
+  marginBottom: 10,
+};
+
+const warpcast = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 12,
+  border: "none",
+  background: "#7C3AED",
+  color: "white",
+  fontSize: 16,
+  marginBottom: 10,
+};
+
+const copyBtn = {
+  width: "100%",
+  padding: 12,
+  borderRadius: 12,
+  border: "none",
+  background: "#0f172a",
+  color: "white",
+  fontSize: 16,
 };
