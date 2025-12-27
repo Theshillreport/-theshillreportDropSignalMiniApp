@@ -37,7 +37,6 @@ export default function Page() {
 
   const [loading, setLoading] = useState(false);
 
-  // ================= WALLET =================
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -71,7 +70,6 @@ export default function Page() {
     }
   };
 
-  // ================= BALANCE =================
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -81,7 +79,6 @@ export default function Page() {
     } catch {}
   };
 
-  // ================= DEPOSIT =================
   const deposit = async () => {
     try {
       if (!provider) return alert("Connect Wallet");
@@ -102,7 +99,6 @@ export default function Page() {
     }
   };
 
-  // ================= WITHDRAW =================
   const withdraw = async () => {
     try {
       if (!provider) return alert("Connect Wallet");
@@ -119,7 +115,6 @@ export default function Page() {
     }
   };
 
-  // ================= BOOST =================
   const activateBoost = () => {
     if (boostActive) return alert("Boost läuft bereits!");
     setBoostActive(true);
@@ -142,7 +137,6 @@ export default function Page() {
 
   const totalApy = baseApy + boostApy;
 
-  // ================= LIVE EARNINGS =================
   useEffect(() => {
     if (!depositedTotal) return;
 
@@ -170,21 +164,21 @@ export default function Page() {
     return () => cancelAnimationFrame(frame);
   }, [earnings]);
 
-  // ================= CONNECT SCREEN =================
   if (!address) {
     return (
       <div style={styles.wrapper}>
         <div style={styles.grid}></div>
 
-        {/* BIG LOGO */}
         <img
           src="/IMG_2690.jpeg"
           style={{
-            width: 120,
-            height: 120,
+            width: 130,
+            height: 130,
             borderRadius: "50%",
             objectFit: "cover",
-            zIndex: 2
+            zIndex: 2,
+            boxShadow: "0 0 25px rgba(255,122,0,0.9), 0 0 60px rgba(255,122,0,0.4)",
+            animation: "pulseGlow 2.5s infinite ease-in-out"
           }}
         />
 
@@ -194,20 +188,27 @@ export default function Page() {
         <button onClick={connectWallet} style={styles.connectBtn}>
           {loading ? "Connecting..." : "Connect Wallet"}
         </button>
+
+        <style>{`
+          @keyframes pulseGlow {
+            0% { box-shadow: 0 0 25px rgba(255,122,0,1), 0 0 60px rgba(255,122,0,0.45); }
+            50% { box-shadow: 0 0 45px rgba(255,122,0,1), 0 0 90px rgba(255,122,0,0.7); }
+            100% { box-shadow: 0 0 25px rgba(255,122,0,1), 0 0 60px rgba(255,122,0,0.45); }
+          }
+        `}</style>
       </div>
     );
   }
 
-  // ================= MAIN UI =================
   return (
     <div style={styles.app}>
       <div style={styles.grid}></div>
 
       <div style={styles.topBar}>
-        <div style={styles.logo}>
+        <div style={styles.logoGlow}>
           <img
             src="/IMG_2690.jpeg"
-            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+            style={{ width: "100%", height: "100%", objectFit: "cover", borderRadius: "50%" }}
           />
         </div>
         <h2>DropSignal</h2>
@@ -260,7 +261,6 @@ export default function Page() {
   );
 }
 
-// ================= UI COMPONENTS =================
 function Card({ title, value, color }) {
   return (
     <div style={styles.card}>
@@ -289,7 +289,6 @@ function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
   );
 }
 
-// ================= STYLES =================
 const styles = {
   wrapper: {
     minHeight: "100vh",
@@ -320,7 +319,6 @@ const styles = {
     background:
       "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px), repeating-linear-gradient(90deg, rgba(255,255,255,.05) 0 2px, transparent 2px 20px)",
     filter: "blur(0.7px)",
-    animation: "move 12s linear infinite",
     zIndex: 0,
   },
 
@@ -332,14 +330,13 @@ const styles = {
     zIndex: 2,
   },
 
-  logo: {
-    width: 42,
-    height: 42,
+  logoGlow: {
+    width: 44,
+    height: 44,
     borderRadius: "50%",
     overflow: "hidden",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center"
+    boxShadow: "0 0 15px rgba(255,122,0,0.9), 0 0 40px rgba(255,122,0,0.5)",
+    animation: "pulseSmall 2.5s infinite ease-in-out"
   },
 
   card: {
