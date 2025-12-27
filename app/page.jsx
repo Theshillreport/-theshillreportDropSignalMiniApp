@@ -25,22 +25,68 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  // BASE APY (Aave Live feeling)
   const [baseApy] = useState(4.3);
 
-  // BOOST SYSTEM
   const [boostActive, setBoostActive] = useState(false);
   const [boostApy, setBoostApy] = useState(0);
   const [boostTime, setBoostTime] = useState(0);
 
-  // Earnings
+  const [referrer, setReferrer] = useState(null);
+  const [myInviteLink, setMyInviteLink] = useState("");
+
   const [earnings, setEarnings] = useState(0);
   const [animatedEarnings, setAnimatedEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
   const [loading, setLoading] = useState(false);
 
-  // ================= WALLET =================
+  // ===== LEADERBOARD =====
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [myRank, setMyRank] = useState(null);
+
+  const updateLeaderboard = (wallet) => {
+    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
+
+    const entryIndex = board.findIndex(x => x.addr === wallet);
+    if (entryIndex >= 0) {
+      board[entryIndex].score += 1;
+    } else {
+      board.push({ addr: wallet, score: 1 });
+    }
+
+    board.sort((a, b) => b.score - a.score);
+
+    localStorage.setItem("dropsignal_board", JSON.stringify(board));
+    setLeaderboard(board);
+  };
+
+  const loadLeaderboard = () => {
+    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
+    board.sort((a, b) => b.score - a.score);
+    setLeaderboard(board);
+  };
+
+  const updateMyRank = (addr) => {
+    let board = JSON.parse(localStorage.getItem("dropsignal_board") || "[]");
+    board.sort((a, b) => b.score - a.score);
+    const index = board.findIndex(x => x.addr === addr);
+    if (index >= 0) setMyRank(index + 1);
+  };
+
+  // ===== REF PARAM =====
+  useEffect(() => {
+    loadLeaderboard();
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get("ref");
+    if (ref && !localStorage.getItem("referrer")) {
+      localStorage.setItem("referrer", ref);
+      setReferrer(ref);
+    } else {
+      setReferrer(localStorage.getItem("referrer"));
+    }
+  }, []);
+
+  // ===== WALLET =====
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -67,6 +113,14 @@ export default function Page() {
       setAddress(addr);
 
       loadUSDCBalance(prov, addr);
+      setMyInviteLink(`${window.location.origin}?ref=${addr}`);
+      updateMyRank(addr);
+
+      if (referrer && referrer !== addr) {
+        activateReferralBoost();
+        updateLeaderboard(referrer);
+      }
+
     } catch {
       alert("Wallet Verbindung fehlgeschlagen");
     } finally {
@@ -74,7 +128,7 @@ export default function Page() {
     }
   };
 
-  // ================= BALANCE =================
+  // ===== BALANCE =====
   const loadUSDCBalance = async (prov, addr) => {
     try {
       const signer = await prov.getSigner();
@@ -84,10 +138,11 @@ export default function Page() {
     } catch {}
   };
 
-  // ================= DEPOSIT =================
+  // ===== DEPOSIT =====
   const deposit = async () => {
     try {
-      if (!provider) return alert("Connect Wallet");
+      if (!provider) return alert("Connect Wallet first");
+
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(depositAmount, 6);
 
@@ -105,10 +160,11 @@ export default function Page() {
     }
   };
 
-  // ================= WITHDRAW =================
+  // ===== WITHDRAW =====
   const withdraw = async () => {
     try {
-      if (!provider) return alert("Connect Wallet");
+      if (!provider) return alert("Connect Wallet first");
+
       const signer = await provider.getSigner();
       const amount = ethers.parseUnits(withdrawAmount, 6);
 
@@ -122,14 +178,26 @@ export default function Page() {
     }
   };
 
-  // ================= BOOST SYSTEM =================
+  // ===== BOOST =====
   const activateBoost = () => {
-    if (boostActive) return alert("Boost läuft bereits!");
+    if (boostActive) {
+      setBoostTime(t => t + 3600);
+      alert("Boost verlängert um 1 Stunde!");
+      return;
+    }
     setBoostActive(true);
-    setBoostApy(2.0);          // +2% Bonus
-    setBoostTime(3600);        // 1 Stunde Boost
+    setBoostApy(2);
+    setBoostTime(3600);
+    alert("🚀 Boost aktiviert! +2% APY");
+  };
 
-    alert("BOOST aktiviert! 🔥 +2% APY für 60 Minuten");
+  const activateReferralBoost = () => {
+    if (boostActive) setBoostTime(t => t + 7200);
+    else {
+      setBoostActive(true);
+      setBoostApy(2);
+      setBoostTime(7200);
+    }
   };
 
   useEffect(() => {
@@ -139,31 +207,24 @@ export default function Page() {
       setBoostApy(0);
       return;
     }
-
-    const timer = setTimeout(() => {
-      setBoostTime(t => t - 1);
-    }, 1000);
-
+    const timer = setTimeout(() => setBoostTime(t => t - 1), 1000);
     return () => clearTimeout(timer);
   }, [boostActive, boostTime]);
 
   const totalApy = baseApy + boostApy;
 
-  // ================= REAL YIELD =================
+  // ===== REALTIME EARNINGS =====
   useEffect(() => {
     if (!depositedTotal) return;
-
     const yearlyRate = totalApy / 100;
     const perSecondRate = yearlyRate / (365 * 24 * 60 * 60);
-
-    const interval = setInterval(() => {
-      setEarnings(e => e + depositedTotal * perSecondRate);
-    }, 1000);
-
+    const interval = setInterval(
+      () => setEarnings(e => e + depositedTotal * perSecondRate),
+      1000
+    );
     return () => clearInterval(interval);
   }, [depositedTotal, totalApy]);
 
-  // Smooth Animation
   useEffect(() => {
     let frame;
     const animate = () => {
@@ -178,16 +239,14 @@ export default function Page() {
     return () => cancelAnimationFrame(frame);
   }, [earnings]);
 
-  // ================= CONNECT SCREEN =================
+  // ===== CONNECT SCREEN =====
   if (!address) {
     return (
       <div style={styles.wrapper}>
         <div style={styles.grid}></div>
-
         <div style={styles.logoBig}></div>
         <h1>DropSignal</h1>
-        <p>USDC Yield auf Base</p>
-
+        <p>Earn USDC Yield on Base</p>
         <button onClick={connectWallet} style={styles.connectBtn}>
           {loading ? "Connecting..." : "Connect Wallet"}
         </button>
@@ -195,7 +254,7 @@ export default function Page() {
     );
   }
 
-  // ================= MAIN UI =================
+  // ===== MAIN UI =====
   return (
     <div style={styles.app}>
       <div style={styles.grid}></div>
@@ -209,49 +268,68 @@ export default function Page() {
         {address.slice(0, 6)}...{address.slice(-4)}
       </p>
 
-      <div style={{ marginTop: 20, display: "grid", gap: 15 }}>
-        <Card title="Base APY" value={`${baseApy}%`} />
-        <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
-        <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
-        <Card title="Balance" value={`${usdcBalance} USDC`} />
-        <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
-        {boostActive && (
-          <Card
-            title="Boost Time Left"
-            value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
-            color="#ff7b00"
-          />
-        )}
-      </div>
+      {/* CARDS */}
+      <Card title="Base APY" value={`${baseApy}%`} />
+      <Card title="Boost APY" value={boostActive ? `+${boostApy}%` : "0%"} color="#ff7b00" />
+      <Card title="Total APY" value={`${totalApy.toFixed(2)}%`} color="#00ffa6" />
+      <Card title="Balance" value={`${usdcBalance} USDC`} />
+      <Card title="Live Earnings" value={`+${animatedEarnings.toFixed(6)} USDC`} color="#00ffa6" />
 
+      {boostActive && (
+        <Card
+          title="Boost Time Left"
+          value={`${Math.floor(boostTime / 60)}:${String(boostTime % 60).padStart(2, "0")}`}
+          color="#ff7b00"
+        />
+      )}
+
+      {/* BOOST BTN */}
       {!boostActive && (
         <button onClick={activateBoost} style={styles.boostBtn}>
           🚀 Activate Boost +2% APY
         </button>
       )}
 
-      <InputBlock
-        value={depositAmount}
-        onChange={setDepositAmount}
-        action={deposit}
-        placeholder="Deposit USDC"
-        btnColor="green"
-        text="Deposit"
-      />
+      {/* INVITE */}
+      <div style={styles.card}>
+        <h3>Invite Friends = Earn More</h3>
+        <p>You & your friend get +2% Boost</p>
+        <input
+          value={myInviteLink}
+          readOnly
+          style={styles.input}
+          onClick={() => {
+            navigator.clipboard.writeText(myInviteLink);
+            alert("Invite Link copied!");
+          }}
+        />
+      </div>
 
-      <InputBlock
-        value={withdrawAmount}
-        onChange={setWithdrawAmount}
-        action={withdraw}
-        placeholder="Withdraw USDC"
-        btnColor="red"
-        text="Withdraw"
-      />
+      {/* LEADERBOARD */}
+      <div style={styles.card}>
+        <h3>🏆 Leaderboard</h3>
+
+        {leaderboard.slice(0, 3).map((p, i) => (
+          <p key={i}>
+            #{i + 1} — {p.addr.slice(0, 5)}...{p.addr.slice(-3)} 🔥 {p.score}
+          </p>
+        ))}
+
+        {myRank && (
+          <p style={{ marginTop: 10, color: "#00ffa6" }}>
+            Your Rank: #{myRank}
+          </p>
+        )}
+      </div>
+
+      {/* INPUT BLOCKS */}
+      <InputBlock value={depositAmount} onChange={setDepositAmount} action={deposit} placeholder="Deposit USDC" btnColor="green" text="Deposit" />
+      <InputBlock value={withdrawAmount} onChange={setWithdrawAmount} action={withdraw} placeholder="Withdraw USDC" btnColor="red" text="Withdraw" />
     </div>
   );
 }
 
-// ================= UI COMPONENTS =================
+// ===== UI COMPONENTS =====
 function Card({ title, value, color }) {
   return (
     <div style={styles.card}>
@@ -270,17 +348,14 @@ function InputBlock({ value, onChange, action, placeholder, btnColor, text }) {
         onChange={(e) => onChange(e.target.value)}
         style={styles.input}
       />
-      <button
-        onClick={action}
-        style={{ ...styles.actionBtn, background: btnColor }}
-      >
+      <button onClick={action} style={{ ...styles.actionBtn, background: btnColor }}>
         {text}
       </button>
     </div>
   );
 }
 
-// ================= STYLES =================
+// ===== STYLES =====
 const styles = {
   wrapper: {
     minHeight: "100vh",
@@ -294,7 +369,6 @@ const styles = {
     position: "relative",
     overflow: "hidden",
   },
-
   app: {
     minHeight: "100vh",
     background: "#020617",
@@ -304,7 +378,6 @@ const styles = {
     position: "relative",
     overflow: "hidden",
   },
-
   grid: {
     position: "absolute",
     inset: 0,
@@ -314,7 +387,6 @@ const styles = {
     animation: "move 12s linear infinite",
     zIndex: 0,
   },
-
   topBar: {
     display: "flex",
     alignItems: "center",
@@ -322,7 +394,6 @@ const styles = {
     position: "relative",
     zIndex: 2,
   },
-
   logo: {
     width: 42,
     height: 42,
@@ -330,7 +401,6 @@ const styles = {
     background: "linear-gradient(145deg,#ff7b00,#ffa640)",
     boxShadow: "0 0 25px #ff7b0080",
   },
-
   logoBig: {
     width: 120,
     height: 120,
@@ -339,15 +409,14 @@ const styles = {
     marginBottom: 15,
     zIndex: 2,
   },
-
   card: {
     background: "linear-gradient(145deg,#0b1436,#152f6b)",
     padding: 18,
     borderRadius: 16,
     position: "relative",
     zIndex: 2,
+    marginTop: 15,
   },
-
   connectBtn: {
     background: "black",
     padding: "14px 18px",
@@ -358,7 +427,6 @@ const styles = {
     marginTop: 25,
     zIndex: 2,
   },
-
   boostBtn: {
     width: "100%",
     padding: 14,
@@ -369,7 +437,6 @@ const styles = {
     marginTop: 20,
     fontSize: 18,
   },
-
   input: {
     width: "100%",
     padding: 12,
@@ -378,7 +445,6 @@ const styles = {
     marginBottom: 10,
     zIndex: 2,
   },
-
   actionBtn: {
     width: "100%",
     padding: 14,
