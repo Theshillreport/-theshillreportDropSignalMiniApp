@@ -37,6 +37,9 @@ export default function Page() {
 
   const [loading, setLoading] = useState(false);
 
+  // 🎉 Money Splash State
+  const [splash, setSplash] = useState(false);
+
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -93,6 +96,11 @@ export default function Page() {
 
       setDepositedTotal(v => v + Number(depositAmount));
       alert("Deposit erfolgreich!");
+
+      // 💸 Money Splash Animation Trigger
+      setSplash(true);
+      setTimeout(() => setSplash(false), 2200);
+
       loadUSDCBalance(provider, address);
     } catch {
       alert("Deposit Fehler");
@@ -201,6 +209,13 @@ export default function Page() {
             50% { transform: translateY(20px); opacity: 1; }
             100% { transform: translateY(0px); opacity: .85; }
           }
+
+          /* 💸 MONEY SPLASH */
+          @keyframes moneyFall {
+            0% { transform: translateY(-50px) rotate(0deg); opacity: 0; }
+            15% { opacity: 1; }
+            100% { transform: translateY(120vh) rotate(360deg); opacity: 0; }
+          }
         `}</style>
       </div>
     );
@@ -209,6 +224,21 @@ export default function Page() {
   return (
     <div style={styles.app}>
       <div style={styles.animatedGrid}></div>
+
+      {/* 💸 Splash Overlay */}
+      {splash && (
+        <div style={styles.splashLayer}>
+          {Array.from({ length: 18 }).map((_, i) => (
+            <div key={i} style={{
+              ...styles.bill,
+              left: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random()}s`
+            }}>
+              💸
+            </div>
+          ))}
+        </div>
+      )}
 
       <div style={styles.topBar}>
         <div style={styles.logoGlow}>
@@ -333,6 +363,20 @@ const styles = {
       "radial-gradient(circle at center, rgba(255,122,0,.25), transparent 60%), repeating-linear-gradient(0deg, rgba(255,255,255,.06) 0 2px, transparent 2px 22px), repeating-linear-gradient(90deg, rgba(255,255,255,.06) 0 2px, transparent 2px 22px)",
     animation: "backgroundMove 12s ease-in-out infinite",
     zIndex: 0,
+  },
+
+  splashLayer: {
+    position: "fixed",
+    inset: 0,
+    pointerEvents: "none",
+    zIndex: 99,
+  },
+
+  bill: {
+    position: "absolute",
+    top: "-20px",
+    fontSize: 32,
+    animation: "moneyFall 2.2s ease-in-out forwards",
   },
 
   topBar: {
