@@ -25,7 +25,7 @@ export default function Page() {
   const [withdrawAmount, setWithdrawAmount] = useState("");
   const [usdcBalance, setUsdcBalance] = useState("0");
 
-  const [apy] = useState(4.3); // echte Base Aave APY
+  const [apy] = useState(4.3);
   const [earnings, setEarnings] = useState(0);
   const [depositedTotal, setDepositedTotal] = useState(0);
 
@@ -130,6 +130,73 @@ export default function Page() {
     return () => clearInterval(interval);
   }, [depositedTotal, apy]);
 
+  // ---------------- UI ----------------
+
+  // LANDING SCREEN BEFORE CONNECT
+  if (!address) {
+    return (
+      <div
+        style={{
+          minHeight: "100vh",
+          background: "linear-gradient(180deg,#ff9a2b,#ff7b00)",
+          color: "white",
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          fontFamily: "system-ui",
+          position: "relative",
+          overflow: "hidden",
+        }}
+      >
+        {/* floating $ */}
+        {[...Array(30)].map((_, i) => (
+          <span
+            key={i}
+            style={{
+              position: "absolute",
+              fontSize: Math.random() * 24 + 12,
+              opacity: 0.25,
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+            }}
+          >
+            $
+          </span>
+        ))}
+
+        <div
+          style={{
+            width: 120,
+            height: 120,
+            borderRadius: "50%",
+            background: "white",
+            marginBottom: 15,
+          }}
+        />
+
+        <h1 style={{ fontSize: 34 }}>DropSignal</h1>
+        <p>Optimized USDC yield on Base</p>
+
+        <button
+          onClick={connectWallet}
+          style={{
+            background: "black",
+            padding: "14px 18px",
+            borderRadius: 14,
+            border: "none",
+            color: "white",
+            fontSize: 18,
+            marginTop: 25,
+          }}
+        >
+          {loading ? "Connecting..." : "Connect Wallet"}
+        </button>
+      </div>
+    );
+  }
+
+  // AFTER CONNECT → your existing working app UI
   return (
     <div
       style={{
@@ -140,7 +207,6 @@ export default function Page() {
         fontFamily: "system-ui",
       }}
     >
-
       {/* HEADER */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
         <div
@@ -151,135 +217,115 @@ export default function Page() {
             background: "#ff7b00",
           }}
         />
-        <h2>X-QUO</h2>
+        <h2>DropSignal</h2>
       </div>
 
-      {!address ? (
-        <button
-          onClick={connectWallet}
+      <p style={{ marginTop: 20 }}>
+        Connected: {address.slice(0, 6)}...{address.slice(-4)}
+      </p>
+
+      {/* LIVE APY */}
+      <div
+        style={{
+          marginTop: 20,
+          background: "#0d1335",
+          padding: 15,
+          borderRadius: 10,
+        }}
+      >
+        <h3>Aave Live Yield</h3>
+        <p style={{ fontSize: 26 }}>{apy}%</p>
+      </div>
+
+      {/* BALANCE */}
+      <div
+        style={{
+          marginTop: 20,
+          background: "#0d1335",
+          padding: 15,
+          borderRadius: 10,
+        }}
+      >
+        <h3>Your USDC Balance</h3>
+        <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
+      </div>
+
+      {/* LIVE EARNINGS */}
+      <div
+        style={{
+          marginTop: 20,
+          background: "#13205c",
+          padding: 15,
+          borderRadius: 10,
+        }}
+      >
+        <h3>Live Earnings</h3>
+        <p style={{ fontSize: 26, color: "#00ffa6" }}>
+          +{earnings.toFixed(6)} USDC
+        </p>
+      </div>
+
+      {/* DEPOSIT */}
+      <div style={{ marginTop: 30 }}>
+        <input
+          placeholder="USDC Amount"
+          value={depositAmount}
+          onChange={(e) => setDepositAmount(e.target.value)}
           style={{
-            background: "#ff7b00",
-            padding: 12,
             width: "100%",
+            padding: 10,
             borderRadius: 10,
+            border: "none",
+            marginBottom: 10,
+          }}
+        />
+
+        <button
+          onClick={deposit}
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 10,
+            background: "green",
             border: "none",
             color: "white",
             fontSize: 16,
-            marginTop: 40,
           }}
         >
-          {loading ? "Connecting..." : "Connect Wallet"}
+          Deposit
         </button>
-      ) : (
-        <>
-          <p style={{ marginTop: 20 }}>
-            Connected: {address.slice(0, 6)}...{address.slice(-4)}
-          </p>
+      </div>
 
-          {/* LIVE APY */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#0d1335",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Aave Live Yield</h3>
-            <p style={{ fontSize: 26 }}>{apy}%</p>
-          </div>
+      {/* WITHDRAW */}
+      <div style={{ marginTop: 30 }}>
+        <input
+          placeholder="Withdraw Amount"
+          value={withdrawAmount}
+          onChange={(e) => setWithdrawAmount(e.target.value)}
+          style={{
+            width: "100%",
+            padding: 10,
+            borderRadius: 10,
+            border: "none",
+            marginBottom: 10,
+          }}
+        />
 
-          {/* BALANCE */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#0d1335",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Your USDC Balance</h3>
-            <p style={{ fontSize: 22 }}>{usdcBalance} USDC</p>
-          </div>
-
-          {/* LIVE EARNINGS */}
-          <div
-            style={{
-              marginTop: 20,
-              background: "#13205c",
-              padding: 15,
-              borderRadius: 10,
-            }}
-          >
-            <h3>Live Earnings</h3>
-            <p style={{ fontSize: 26, color: "#00ffa6" }}>
-              +{earnings.toFixed(6)} USDC
-            </p>
-          </div>
-
-          {/* DEPOSIT */}
-          <div style={{ marginTop: 30 }}>
-            <input
-              placeholder="USDC Amount"
-              value={depositAmount}
-              onChange={(e) => setDepositAmount(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 10,
-                border: "none",
-                marginBottom: 10,
-              }}
-            />
-
-            <button
-              onClick={deposit}
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 10,
-                background: "green",
-                border: "none",
-                color: "white",
-                fontSize: 16,
-              }}
-            >
-              Deposit
-            </button>
-          </div>
-
-          {/* WITHDRAW */}
-          <div style={{ marginTop: 30 }}>
-            <input
-              placeholder="Withdraw Amount"
-              value={withdrawAmount}
-              onChange={(e) => setWithdrawAmount(e.target.value)}
-              style={{
-                width: "100%",
-                padding: 10,
-                borderRadius: 10,
-                border: "none",
-                marginBottom: 10,
-              }}
-            />
-
-            <button
-              onClick={withdraw}
-              style={{
-                width: "100%",
-                padding: 12,
-                borderRadius: 10,
-                background: "red",
-                border: "none",
-                color: "white",
-                fontSize: 16,
-              }}
-            >
-              Withdraw
-            </button>
-          </div>
-        </>
-      )}
+        <button
+          onClick={withdraw}
+          style={{
+            width: "100%",
+            padding: 12,
+            borderRadius: 10,
+            background: "red",
+            border: "none",
+            color: "white",
+            fontSize: 16,
+          }}
+        >
+          Withdraw
+        </button>
+      </div>
     </div>
   );
 }
